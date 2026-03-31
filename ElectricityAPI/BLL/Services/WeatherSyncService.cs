@@ -20,7 +20,7 @@ namespace BLL.Services
         public async Task SyncWeatherAsync()
         {
             var hasWeatherData = await _context.WeatherRecords.AnyAsync();
-            var pastDays = hasWeatherData ? 0 : 21;
+            var pastDays = hasWeatherData ? 0 : 60;
             const int forecastDays = 3;
 
             string url = $"https://api.open-meteo.com/v1/forecast?latitude=50.45&longitude=30.52&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,relative_humidity_2m_mean&forecast_days={forecastDays}&past_days={pastDays}&timezone=Europe%2FKyiv";

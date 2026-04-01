@@ -28,8 +28,11 @@ namespace BLL.Services
                     using (var scope = _serviceProvider.CreateScope())
                     {
                         var weatherSyncService = scope.ServiceProvider.GetRequiredService<WeatherSyncService>();
+                        var consumptionSyncService = scope.ServiceProvider.GetRequiredService<ConsumptionSyncService>();
 
                         await weatherSyncService.SyncWeatherAsync();
+                        await consumptionSyncService.SyncConsumptionAsync();
+                        await consumptionSyncService.CleanupOldConsumptionAsync();
                         await weatherSyncService.CleanupOldWeatherAsync();
                     }
 

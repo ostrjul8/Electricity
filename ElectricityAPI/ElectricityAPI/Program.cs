@@ -18,6 +18,7 @@ namespace ElectricityAPI
             builder.Services.AddHostedService<WeatherUpdateService>();
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<WeatherSyncService>();
+            builder.Services.AddScoped<ConsumptionSyncService>();
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

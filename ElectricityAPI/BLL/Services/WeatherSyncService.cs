@@ -1,4 +1,5 @@
 ﻿using BLL.Models;
+using BLL.Models;
 using Core.Entities;
 using DAL;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ namespace BLL.Services
     {
         private readonly AppDbContext _context;
         private readonly HttpClient _httpClient;
+        private const int DefaultForecastDays = 3;
 
         public WeatherSyncService(AppDbContext context, HttpClient httpClient)
         {
@@ -21,8 +23,17 @@ namespace BLL.Services
         {
             var hasWeatherData = await _context.WeatherRecords.AnyAsync();
             var pastDays = hasWeatherData ? 0 : 60;
-            const int forecastDays = 3;
+            await SyncWeatherWindowAsync(pastDays, DefaultForecastDays);
+        }
 
+        public async Task EnsureWeatherWindowAsync()
+        {
+            const int pastDaysIncludingToday = 61;
+            await SyncWeatherWindowAsync(pastDaysIncludingToday, DefaultForecastDays);
+        }
+
+        private async Task SyncWeatherWindowAsync(int pastDays, int forecastDays)
+        {
             string url = $"https://api.open-meteo.com/v1/forecast?latitude=50.45&longitude=30.52&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,relative_humidity_2m_mean&forecast_days={forecastDays}&past_days={pastDays}&timezone=Europe%2FKyiv";
 
             var response = await _httpClient.GetAsync(url);
@@ -34,6 +45,7 @@ namespace BLL.Services
             if (weatherData?.Daily == null) return;
 
             var newRecords = new List<WeatherRecord>();
+            var hasUpdatedRecords = false;
 
             for (int i = 0; i < weatherData.Daily.Time.Count; i++)
             {
@@ -49,6 +61,7 @@ namespace BLL.Services
                     existingRecord.WindSpeed = weatherData.Daily.WindSpeed[i];
                     existingRecord.Humidity = (int)weatherData.Daily.Humidity[i];
                     existingRecord.Condition = GetConditionFromCode(weatherData.Daily.WeatherCode[i]);
+                    hasUpdatedRecords = true;
                 }
                 else
                 {
@@ -64,9 +77,13 @@ namespace BLL.Services
                 }
             }
 
-            if (newRecords.Any())
+            if (newRecords.Any() || hasUpdatedRecords)
             {
-                _context.WeatherRecords.AddRange(newRecords);
+                if (newRecords.Any())
+                {
+                    _context.WeatherRecords.AddRange(newRecords);
+                }
+
                 await _context.SaveChangesAsync();
             }
         }

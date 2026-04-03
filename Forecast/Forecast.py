@@ -5,8 +5,19 @@ from sqlalchemy import create_engine
 
 engine = create_engine('postgresql://postgres:postgres@localhost:5432/ElectricityDB')
 
-print("Завантаження даних з Parquet.")
-df = pd.read_parquet('electricity_data.parquet')
+query = """
+SELECT 
+    cr."Date", cr."BuildingId", b."Type", b."Floors", b."Material", b."Area",
+    wr."MinTemp", wr."MaxTemp", wr."Condition", wr."WindSpeed", wr."Humidity",
+    cr."HoursWithElectricity", cr."ConsumptionAmount"
+FROM "ConsumptionRecords" cr
+JOIN "Buildings" b ON cr."BuildingId" = b."Id"
+JOIN "WeatherRecords" wr ON cr."WeatherRecordId" = wr."Id"
+ORDER BY cr."BuildingId", cr."Date";
+"""
+
+print("Витягнення даних з БД.")
+df = pd.read_sql(query, engine)
 
 print("Підготовка даних.")
 df['Date'] = pd.to_datetime(df['Date'])

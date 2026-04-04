@@ -33,8 +33,8 @@ namespace BLL.Services
                 .ToList();
 
             bool hasConsumptionValues = mapValues.Any();
-            double p10 = hasConsumptionValues ? GetPercentile(mapValues, 0.10) : 0;
-            double p90 = hasConsumptionValues ? GetPercentile(mapValues, 0.90) : 0;
+            double p10 = hasConsumptionValues ? GetPercentile(mapValues, 0.05) : 0;
+            double p90 = hasConsumptionValues ? GetPercentile(mapValues, 0.95) : 0;
 
             return buildings.Select(b => new BuildingMapPointDTO
             {

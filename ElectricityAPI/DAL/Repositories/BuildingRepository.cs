@@ -1,0 +1,50 @@
+using Core.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace DAL.Repositories
+{
+    public class BuildingRepository
+    {
+        private readonly AppDbContext _context;
+
+        public BuildingRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<Building?> GetByIdWithDistrictAsync(int id)
+        {
+            return await _context.Buildings
+                .AsNoTracking()
+                .Include(b => b.District)
+                .FirstOrDefaultAsync(b => b.Id == id);
+        }
+
+        public Task<List<Building>> GetForConsumptionAsync()
+        {
+            return _context.Buildings
+                .AsNoTracking()
+                .Select(b => new Building
+                {
+                    Id = b.Id,
+                    AverageConsumption = b.AverageConsumption
+                })
+                .ToListAsync();
+        }
+
+        public Task<List<Building>> GetForMapPointsAsync()
+        {
+            return _context.Buildings
+                .AsNoTracking()
+                .Where(b => b.Latitude != 0 && b.Longitude != 0)
+                .Select(b => new Building
+                {
+                    Id = b.Id,
+                    Latitude = b.Latitude,
+                    Longitude = b.Longitude,
+                    AverageConsumption = b.AverageConsumption
+                })
+                .ToListAsync();
+        }
+    }
+}

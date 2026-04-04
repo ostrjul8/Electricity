@@ -1,5 +1,6 @@
 using BLL.Services;
 using DAL;
+using DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace ElectricityAPI
@@ -19,6 +20,13 @@ namespace ElectricityAPI
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<WeatherSyncService>();
             builder.Services.AddScoped<ConsumptionSyncService>();
+            builder.Services.AddScoped<ForecastScriptService>();
+            builder.Services.AddScoped<BuildingRepository>();
+            builder.Services.AddScoped<WeatherRepository>();
+            builder.Services.AddScoped<ConsumptionRepository>();
+            builder.Services.AddScoped<ForecastRepository>();
+            builder.Services.AddScoped<BuildingQueryService>();
+            builder.Services.AddScoped<BuildingMapService>();
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

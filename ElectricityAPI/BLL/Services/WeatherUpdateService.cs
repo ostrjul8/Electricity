@@ -29,11 +29,15 @@ namespace BLL.Services
                     {
                         var weatherSyncService = scope.ServiceProvider.GetRequiredService<WeatherSyncService>();
                         var consumptionSyncService = scope.ServiceProvider.GetRequiredService<ConsumptionSyncService>();
+                        var forecastScriptService = scope.ServiceProvider.GetRequiredService<ForecastScriptService>();
 
                         await weatherSyncService.SyncWeatherAsync();
                         await consumptionSyncService.SyncConsumptionAsync();
+                        await forecastScriptService.RunForecastScriptAsync(stoppingToken);
+
                         await consumptionSyncService.CleanupOldConsumptionAsync();
                         await weatherSyncService.CleanupOldWeatherAsync();
+                        await forecastScriptService.CleanupOldForecastsAsync(stoppingToken);
                     }
 
                     _logger.LogInformation("Weather data updated successfully.");

@@ -1,27 +1,26 @@
 ﻿using BLL.Models;
-using BLL.Models;
 using Core.Entities;
-using DAL;
-using Microsoft.EntityFrameworkCore;
+using DAL.Repositories;
+using System.Globalization;
 using System.Text.Json;
 
 namespace BLL.Services
 {
     public class WeatherSyncService
     {
-        private readonly AppDbContext _context;
+        private readonly WeatherRepository _weatherRepository;
         private readonly HttpClient _httpClient;
         private const int DefaultForecastDays = 3;
 
-        public WeatherSyncService(AppDbContext context, HttpClient httpClient)
+        public WeatherSyncService(WeatherRepository weatherRepository, HttpClient httpClient)
         {
-            _context = context;
+            _weatherRepository = weatherRepository;
             _httpClient = httpClient;
         }
 
         public async Task SyncWeatherAsync()
         {
-            var hasWeatherData = await _context.WeatherRecords.AnyAsync();
+            var hasWeatherData = await _weatherRepository.HasAnyAsync();
             var pastDays = hasWeatherData ? 0 : 60;
             await SyncWeatherWindowAsync(pastDays, DefaultForecastDays);
         }
@@ -44,15 +43,22 @@ namespace BLL.Services
 
             if (weatherData?.Daily == null) return;
 
+            var parsedDates = weatherData.Daily.Time
+                .Select(d => DateTime.ParseExact(d, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+                .ToList();
+
+            var minDate = parsedDates.Min();
+
+            var existingByDate = await _weatherRepository.GetByStartDateAsync(minDate);
+
             var newRecords = new List<WeatherRecord>();
             var hasUpdatedRecords = false;
 
             for (int i = 0; i < weatherData.Daily.Time.Count; i++)
             {
-                var date = DateTime.Parse(weatherData.Daily.Time[i]).ToUniversalTime();
+                var date = parsedDates[i];
 
-                var existingRecord = await _context.WeatherRecords
-                    .FirstOrDefaultAsync(w => w.Date.Date == date.Date);
+                existingByDate.TryGetValue(date.Date, out var existingRecord);
 
                 if (existingRecord is not null)
                 {
@@ -81,20 +87,19 @@ namespace BLL.Services
             {
                 if (newRecords.Any())
                 {
-                    _context.WeatherRecords.AddRange(newRecords);
+                    await _weatherRepository.AddRangeAsync(newRecords);
                 }
 
-                await _context.SaveChangesAsync();
+                await _weatherRepository.SaveChangesAsync();
             }
         }
 
         public async Task CleanupOldWeatherAsync()
         {
-            var threeMonthsAgo = DateTime.UtcNow.AddMonths(-3);
+            var now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
+            var threeMonthsAgo = now.AddMonths(-3);
 
-            await _context.WeatherRecords
-                .Where(w => w.Date < threeMonthsAgo)
-                .ExecuteDeleteAsync();
+            await _weatherRepository.DeleteOlderThanAsync(threeMonthsAgo);
         }
 
         private string GetConditionFromCode(int code)

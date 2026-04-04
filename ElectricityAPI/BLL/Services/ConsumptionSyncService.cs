@@ -1,30 +1,38 @@
 using Core.Entities;
-using DAL;
-using Microsoft.EntityFrameworkCore;
+using DAL.Repositories;
 
 namespace BLL.Services
 {
     public class ConsumptionSyncService
     {
-        private readonly AppDbContext _context;
+        private readonly ConsumptionRepository _consumptionRepository;
+        private readonly BuildingRepository _buildingRepository;
+        private readonly WeatherRepository _weatherRepository;
 
-        public ConsumptionSyncService(AppDbContext context)
+        public ConsumptionSyncService(
+            ConsumptionRepository consumptionRepository,
+            BuildingRepository buildingRepository,
+            WeatherRepository weatherRepository)
         {
-            _context = context;
+            _consumptionRepository = consumptionRepository;
+            _buildingRepository = buildingRepository;
+            _weatherRepository = weatherRepository;
         }
 
         public async Task SyncConsumptionAsync()
         {
-            var hasConsumptionData = await _context.ConsumptionRecords.AnyAsync();
-            var startDate = hasConsumptionData ? DateTime.UtcNow.Date : DateTime.UtcNow.Date.AddDays(-60);
+            var hasConsumptionData = await _consumptionRepository.HasAnyAsync();
+            var today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv").Date;
+            var startDate = hasConsumptionData ? today : today.AddDays(-60);
 
             await SyncConsumptionWindowAsync(startDate, !hasConsumptionData);
         }
 
         public async Task EnsureConsumptionWindowAsync()
         {
-            var startDate = DateTime.UtcNow.Date.AddDays(-60);
-            var hasConsumptionData = await _context.ConsumptionRecords.AnyAsync();
+            var today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv").Date;
+            var startDate = today.AddDays(-60);
+            var hasConsumptionData = await _consumptionRepository.HasAnyAsync();
 
             await SyncConsumptionWindowAsync(startDate, !hasConsumptionData);
         }
@@ -33,35 +41,21 @@ namespace BLL.Services
         {
             const int batchSize = 1000;
 
-            var buildings = await _context.Buildings
-                .AsNoTracking()
-                .Select(b => new { b.Id, b.AverageConsumption })
-                .ToListAsync();
+            var buildings = await _buildingRepository.GetForConsumptionAsync();
 
             if (!buildings.Any())
             {
                 return;
             }
 
-            var weatherRecords = await _context.WeatherRecords
-                .AsNoTracking()
-                .Where(w => w.Date.Date >= startDate)
-                .Select(w => new
-                {
-                    w.Id,
-                    Date = w.Date.Date,
-                    w.MinTemp,
-                    w.MaxTemp,
-                    w.Condition
-                })
-                .ToListAsync();
+            var weatherRecords = await _weatherRepository.GetFromDateAsync(startDate);
 
             if (!weatherRecords.Any())
             {
                 return;
             }
 
-            var today = DateTime.UtcNow.Date;
+            var today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv").Date;
 
             if (isInitialFill)
             {
@@ -89,9 +83,9 @@ namespace BLL.Services
 
                         if (newRecords.Count >= batchSize)
                         {
-                            _context.ConsumptionRecords.AddRange(newRecords);
-                            await _context.SaveChangesAsync();
-                            _context.ChangeTracker.Clear();
+                            await _consumptionRepository.AddRangeAsync(newRecords);
+                            await _consumptionRepository.SaveChangesAsync();
+                            _consumptionRepository.ClearChangeTracker();
                             newRecords.Clear();
                         }
                     }
@@ -99,9 +93,9 @@ namespace BLL.Services
 
                 if (newRecords.Count > 0)
                 {
-                    _context.ConsumptionRecords.AddRange(newRecords);
-                    await _context.SaveChangesAsync();
-                    _context.ChangeTracker.Clear();
+                    await _consumptionRepository.AddRangeAsync(newRecords);
+                    await _consumptionRepository.SaveChangesAsync();
+                    _consumptionRepository.ClearChangeTracker();
                 }
 
                 return;
@@ -109,9 +103,7 @@ namespace BLL.Services
 
             foreach (var weather in weatherRecords)
             {
-                var existingForDate = await _context.ConsumptionRecords
-                    .Where(c => c.Date.Date == weather.Date)
-                    .ToDictionaryAsync(c => c.BuildingId);
+                var existingForDate = await _consumptionRepository.GetByDateAsync(weather.Date);
 
                 var newRecords = new List<ConsumptionRecord>();
 
@@ -148,21 +140,20 @@ namespace BLL.Services
 
                 if (newRecords.Any())
                 {
-                    _context.ConsumptionRecords.AddRange(newRecords);
+                    await _consumptionRepository.AddRangeAsync(newRecords);
                 }
 
-                await _context.SaveChangesAsync();
-                _context.ChangeTracker.Clear();
+                await _consumptionRepository.SaveChangesAsync();
+                _consumptionRepository.ClearChangeTracker();
             }
         }
 
         public async Task CleanupOldConsumptionAsync()
         {
-            var threeMonthsAgo = DateTime.UtcNow.AddMonths(-3);
+            var now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
+            var threeMonthsAgo = now.AddMonths(-3);
 
-            await _context.ConsumptionRecords
-                .Where(c => c.Date < threeMonthsAgo)
-                .ExecuteDeleteAsync();
+            await _consumptionRepository.DeleteOlderThanAsync(threeMonthsAgo);
         }
 
         private static double GenerateHoursWithElectricity(string condition)

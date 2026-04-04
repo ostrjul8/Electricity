@@ -9,6 +9,8 @@
         public int Floors { get; set; }
         public string Material { get; set; } = string.Empty;
         public double Area { get; set; }
+        public double Longitude { get; set; }
+        public double Latitude { get; set; }
         public int DistrictId { get; set; }
         public string DistrictName { get; set; } = string.Empty;
         public double AverageConsumption { get; set; }

@@ -41,9 +41,24 @@ namespace DAL.Repositories
                 {
                     Id = b.Id,
                     Latitude = b.Latitude,
-                    Longitude = b.Longitude,
-                    AverageConsumption = b.AverageConsumption
+                    Longitude = b.Longitude
                 })
+                .ToListAsync();
+        }
+
+        public Task<int> GetCountAsync()
+        {
+            return _context.Buildings.CountAsync();
+        }
+
+        public Task<List<Building>> GetPagedWithDistrictAsync(int skip, int take)
+        {
+            return _context.Buildings
+                .AsNoTracking()
+                .Include(b => b.District)
+                .OrderBy(b => b.Id)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync();
         }
     }

@@ -49,7 +49,14 @@ namespace ElectricityAPI.Controllers
 
             Response.Headers["Content-Encoding"] = "br";
 
-            return File(output.ToArray(), "map-points/json");
+            return File(output.ToArray(), "application/json");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var result = await _buildingQueryService.GetPagedBuildingsAsync(page, pageSize);
+            return Ok(result);
         }
     }
 }

@@ -59,5 +59,42 @@ namespace BLL.Services
                 LatestForecast = latestForecast
             };
         }
+
+        public async Task<PagedResultDTO<BuildingDTO>> GetPagedBuildingsAsync(int page, int pageSize)
+        {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 10 : pageSize;
+
+            var totalCount = await _buildingRepository.GetCountAsync();
+            var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / pageSize);
+            var skip = (page - 1) * pageSize;
+
+            var buildings = await _buildingRepository.GetPagedWithDistrictAsync(skip, pageSize);
+
+            var items = buildings.Select(b => new BuildingDTO
+            {
+                Id = b.Id,
+                Type = b.Type,
+                Address = b.Address,
+                Name = b.Name,
+                Floors = b.Floors,
+                Material = b.Material,
+                Area = b.Area,
+                Longitude = b.Longitude,
+                Latitude = b.Latitude,
+                DistrictId = b.DistrictId,
+                DistrictName = b.District?.Name ?? string.Empty,
+                AverageConsumption = b.AverageConsumption
+            }).ToList();
+
+            return new PagedResultDTO<BuildingDTO>
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                Items = items
+            };
+        }
     }
 }

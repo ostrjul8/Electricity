@@ -1,4 +1,5 @@
 using BLL.Models;
+using Core.Entities;
 using DAL.Repositories;
 
 namespace BLL.Services
@@ -25,7 +26,12 @@ namespace BLL.Services
 
             var latestForecastEntity = await _forecastRepository.GetLatestByBuildingIdAsync(id);
 
-            var building = new BuildingDTO
+            if (latestForecastEntity is null)
+            {
+                return null;
+            }
+
+            BuildingDTO building = new BuildingDTO
             {
                 Id = buildingEntity.Id,
                 Type = buildingEntity.Type,
@@ -41,9 +47,7 @@ namespace BLL.Services
                 AverageConsumption = buildingEntity.AverageConsumption
             };
 
-            ForecastDTO? latestForecast = latestForecastEntity is null
-                ? null
-                : new ForecastDTO
+            ForecastDTO latestForecast = new ForecastDTO
                 {
                     Id = latestForecastEntity.Id,
                     BuildingId = latestForecastEntity.BuildingId,
@@ -62,16 +66,13 @@ namespace BLL.Services
 
         public async Task<PagedResultDTO<BuildingDTO>> GetPagedBuildingsAsync(int page, int pageSize)
         {
-            page = page < 1 ? 1 : page;
-            pageSize = pageSize < 1 ? 10 : pageSize;
+            int totalCount = await _buildingRepository.GetCountAsync();
+            int totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / pageSize);
+            int skip = (page - 1) * pageSize;
 
-            var totalCount = await _buildingRepository.GetCountAsync();
-            var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / pageSize);
-            var skip = (page - 1) * pageSize;
+            List<Building> buildings = await _buildingRepository.GetPagedWithDistrictAsync(skip, pageSize);
 
-            var buildings = await _buildingRepository.GetPagedWithDistrictAsync(skip, pageSize);
-
-            var items = buildings.Select(b => new BuildingDTO
+            List<BuildingDTO> items = buildings.Select(b => new BuildingDTO
             {
                 Id = b.Id,
                 Type = b.Type,

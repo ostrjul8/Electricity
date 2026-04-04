@@ -55,6 +55,9 @@ namespace ElectricityAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 10 : pageSize;
+
             var result = await _buildingQueryService.GetPagedBuildingsAsync(page, pageSize);
             return Ok(result);
         }

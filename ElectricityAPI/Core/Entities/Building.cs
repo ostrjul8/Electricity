@@ -17,7 +17,7 @@ namespace Core.Entities
         public int DistrictId { get; set; }
         public double AverageConsumption { get; set; }
 
-        public District District { get; set; }
+        public District? District { get; set; }
         public ICollection<Forecast> Forecasts { get; set; } = new List<Forecast>();
         public ICollection<ConsumptionRecord> ConsumptionRecords { get; set; } = new List<ConsumptionRecord>();
     }

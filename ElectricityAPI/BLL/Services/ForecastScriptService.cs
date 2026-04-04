@@ -21,9 +21,9 @@ namespace BLL.Services
 
         public async Task RunForecastScriptAsync(CancellationToken cancellationToken = default)
         {
-            var pythonExecutable = _configuration["ForecastScript:PythonExecutable"] ?? "python";
-            var configuredPath = _configuration["ForecastScript:ScriptPath"];
-            var scriptPath = ResolveScriptPath(configuredPath);
+            string pythonExecutable = _configuration["ForecastScript:PythonExecutable"] ?? "python";
+            string? configuredPath = _configuration["ForecastScript:ScriptPath"];
+            string scriptPath = ResolveScriptPath(configuredPath);
 
             if (!File.Exists(scriptPath))
             {
@@ -32,7 +32,7 @@ namespace BLL.Services
 
             _logger.LogInformation("Starting forecast script: {ScriptPath}", scriptPath);
 
-            var startInfo = new ProcessStartInfo
+            ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = pythonExecutable,
                 Arguments = $"\"{scriptPath}\"",
@@ -45,16 +45,16 @@ namespace BLL.Services
 
             startInfo.Environment["TZ"] = "Europe/Kyiv";
 
-            using var process = new Process { StartInfo = startInfo };
+            using Process process = new Process { StartInfo = startInfo };
             process.Start();
 
-            var stdOutTask = process.StandardOutput.ReadToEndAsync();
-            var stdErrTask = process.StandardError.ReadToEndAsync();
+            Task<string> stdOutTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> stdErrTask = process.StandardError.ReadToEndAsync();
 
             await process.WaitForExitAsync(cancellationToken);
 
-            var stdOut = await stdOutTask;
-            var stdErr = await stdErrTask;
+            string stdOut = await stdOutTask;
+            string stdErr = await stdErrTask;
 
             if (!string.IsNullOrWhiteSpace(stdOut))
             {
@@ -76,8 +76,8 @@ namespace BLL.Services
 
         public async Task CleanupOldForecastsAsync(CancellationToken cancellationToken = default)
         {
-            var now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
-            var threeMonthsAgo = now.AddMonths(-3);
+            DateTime now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
+            DateTime threeMonthsAgo = now.AddMonths(-3);
 
             await _forecastRepository.DeleteOlderThanAsync(threeMonthsAgo, cancellationToken);
         }

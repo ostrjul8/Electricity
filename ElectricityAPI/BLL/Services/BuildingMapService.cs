@@ -1,3 +1,4 @@
+using Core.Entities;
 using DAL.Repositories;
 
 namespace BLL.Services
@@ -15,32 +16,32 @@ namespace BLL.Services
 
         public async Task<List<BuildingMapPointDTO>> GetMapPointsAsync()
         {
-            var buildings = await _buildingRepository.GetForMapPointsAsync();
+            List<Building> buildings = await _buildingRepository.GetForMapPointsAsync();
 
             if (!buildings.Any())
             {
                 return new List<BuildingMapPointDTO>();
             }
 
-            var latestConsumptionRecords = await _consumptionRepository.GetLatestPerBuildingAsync();
-            var latestByBuildingId = latestConsumptionRecords
+            List<ConsumptionRecord> latestConsumptionRecords = await _consumptionRepository.GetLatestPerBuildingAsync();
+            Dictionary<int, double> latestByBuildingId = latestConsumptionRecords
                 .ToDictionary(c => c.BuildingId, c => c.ConsumptionAmount);
 
-            var mapValues = buildings
+            List<double> mapValues = buildings
                 .Where(b => latestByBuildingId.ContainsKey(b.Id))
                 .Select(b => latestByBuildingId[b.Id])
                 .ToList();
 
-            var hasConsumptionValues = mapValues.Any();
-            var p10 = hasConsumptionValues ? GetPercentile(mapValues, 0.10) : 0;
-            var p90 = hasConsumptionValues ? GetPercentile(mapValues, 0.90) : 0;
+            bool hasConsumptionValues = mapValues.Any();
+            double p10 = hasConsumptionValues ? GetPercentile(mapValues, 0.10) : 0;
+            double p90 = hasConsumptionValues ? GetPercentile(mapValues, 0.90) : 0;
 
             return buildings.Select(b => new BuildingMapPointDTO
             {
                 Id = b.Id,
                 Longitude = b.Longitude,
                 Latitude = b.Latitude,
-                ColorLevel = latestByBuildingId.TryGetValue(b.Id, out var latestConsumption)
+                ColorLevel = latestByBuildingId.TryGetValue(b.Id, out double latestConsumption)
                     ? CalculateColorLevel(latestConsumption, p10, p90)
                     : 3
             }).ToList();
@@ -63,8 +64,8 @@ namespace BLL.Services
                 return 3;
             }
 
-            var normalized = (value - p10) / (p90 - p10);
-            var bucket = (int)(normalized * 4);
+            double normalized = (value - p10) / (p90 - p10);
+            int bucket = (int)(normalized * 4);
             bucket = Math.Clamp(bucket, 0, 3);
 
             return 2 + bucket;
@@ -72,23 +73,23 @@ namespace BLL.Services
 
         private static double GetPercentile(List<double> values, double percentile)
         {
-            var ordered = values.OrderBy(v => v).ToList();
+            List<double> ordered = values.OrderBy(v => v).ToList();
 
             if (ordered.Count == 1)
             {
                 return ordered[0];
             }
 
-            var position = (ordered.Count - 1) * percentile;
-            var lowerIndex = (int)Math.Floor(position);
-            var upperIndex = (int)Math.Ceiling(position);
+            double position = (ordered.Count - 1) * percentile;
+            int lowerIndex = (int)Math.Floor(position);
+            int upperIndex = (int)Math.Ceiling(position);
 
             if (lowerIndex == upperIndex)
             {
                 return ordered[lowerIndex];
             }
 
-            var fraction = position - lowerIndex;
+            double fraction = position - lowerIndex;
             return ordered[lowerIndex] + (ordered[upperIndex] - ordered[lowerIndex]) * fraction;
         }
     }

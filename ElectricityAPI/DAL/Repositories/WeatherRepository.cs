@@ -37,7 +37,7 @@ namespace DAL.Repositories
 
         public async Task<Dictionary<DateTime, WeatherRecord>> GetByStartDateAsync(DateTime startDate)
         {
-            var records = await _context.WeatherRecords
+            List<WeatherRecord> records = await _context.WeatherRecords
                 .Where(w => w.Date.Date >= startDate.Date)
                 .ToListAsync();
 

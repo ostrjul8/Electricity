@@ -2,8 +2,10 @@
 using Core.Entities;
 using DAL;
 using NetTopologySuite;
+using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace ElectricityAPI.Data
@@ -14,18 +16,18 @@ namespace ElectricityAPI.Data
         {
             if (context.Buildings.Any()) return;
 
-            var districtGeoJsonPath = "districts.geojson";
-            var districtPolygons = new Dictionary<string, Geometry>();
+            string districtGeoJsonPath = "districts.geojson";
+            Dictionary<string, Geometry> districtPolygons = new Dictionary<string, Geometry>();
 
             if (File.Exists(districtGeoJsonPath))
             {
-                var geoJson = await File.ReadAllTextAsync(districtGeoJsonPath);
-                var reader = new GeoJsonReader();
-                var featureCollection = reader.Read<NetTopologySuite.Features.FeatureCollection>(geoJson);
+                string geoJson = await File.ReadAllTextAsync(districtGeoJsonPath);
+                GeoJsonReader reader = new GeoJsonReader();
+                FeatureCollection featureCollection = reader.Read<NetTopologySuite.Features.FeatureCollection>(geoJson);
 
-                foreach (var feature in featureCollection)
+                foreach (Feature feature in featureCollection)
                 {
-                    var districtName = feature.Attributes.Exists("name") ? feature.Attributes["name"]?.ToString() : null;
+                    string? districtName = feature.Attributes.Exists("name") ? feature.Attributes["name"]?.ToString() : null;
                     if (!string.IsNullOrEmpty(districtName))
                     {
                         districtPolygons[districtName] = feature.Geometry;
@@ -39,9 +41,9 @@ namespace ElectricityAPI.Data
                 await context.SaveChangesAsync();
             }
 
-            var districtsFromDb = context.Districts.ToList();
+            List<District> districtsFromDb = context.Districts.ToList();
 
-            var fallbackDistrict = districtsFromDb.FirstOrDefault();
+            District? fallbackDistrict = districtsFromDb.FirstOrDefault();
             if (fallbackDistrict == null)
             {
                 fallbackDistrict = new District { Name = "Невідомий район" };
@@ -50,19 +52,19 @@ namespace ElectricityAPI.Data
                 districtsFromDb.Add(fallbackDistrict);
             }
 
-            var buildingsPath = "buildings.json";
+            string buildingsPath = "buildings.json";
             if (!File.Exists(buildingsPath)) return;
 
-            var buildingsJson = await File.ReadAllTextAsync(buildingsPath);
-            var osmBuildings = JsonSerializer.Deserialize<List<OsmBuildingJsonDTO>>(buildingsJson);
-            var buildingsToInsert = new List<Building>();
+            string buildingsJson = await File.ReadAllTextAsync(buildingsPath);
+            List<OsmBuildingJsonDTO> osmBuildings = JsonSerializer.Deserialize<List<OsmBuildingJsonDTO>>(buildingsJson) ?? new List<OsmBuildingJsonDTO>();
+            List<Building> buildingsToInsert = new List<Building>();
 
-            var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            GeometryFactory geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
-            var rnd = new Random();
-            var randomMaterials = new[] { "brick", "concrete", "wood", "glass", "cement_block" };
+            Random rnd = new Random();
+            string[] randomMaterials = new[] { "brick", "concrete", "wood", "glass", "cement_block" };
 
-            foreach (var osm in osmBuildings)
+            foreach (OsmBuildingJsonDTO osm in osmBuildings)
             {
                 int.TryParse(osm.Levels, out int parsedFloors);
 
@@ -81,13 +83,13 @@ namespace ElectricityAPI.Data
 
                 if (lon != 0 && lat != 0)
                 {
-                    var buildingPoint = geometryFactory.CreatePoint(new Coordinate(lon, lat));
+                    Point buildingPoint = geometryFactory.CreatePoint(new Coordinate(lon, lat));
 
-                    foreach (var polygon in districtPolygons)
+                    foreach (KeyValuePair<string, Geometry> polygon in districtPolygons)
                     {
                         if (polygon.Value.Contains(buildingPoint))
                         {
-                            var matchedDistrict = districtsFromDb.FirstOrDefault(d => d.Name == polygon.Key);
+                            District? matchedDistrict = districtsFromDb.FirstOrDefault(d => d.Name == polygon.Key);
                             if (matchedDistrict != null)
                             {
                                 assignedDistrictId = matchedDistrict.Id;

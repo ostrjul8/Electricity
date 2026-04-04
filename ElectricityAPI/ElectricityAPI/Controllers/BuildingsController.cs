@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
+using BLL.Models;
 
 namespace ElectricityAPI.Controllers
 {
@@ -23,7 +24,7 @@ namespace ElectricityAPI.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _buildingQueryService.GetBuildingDetailsAsync(id);
+            BuildingDetailsDTO? result = await _buildingQueryService.GetBuildingDetailsAsync(id);
 
             if (result is null)
             {
@@ -36,13 +37,13 @@ namespace ElectricityAPI.Controllers
         [HttpGet("map-points")]
         public async Task<IActionResult> GetMapPoints()
         {
-            var points = await _buildingMapService.GetMapPointsAsync();
+            List<BuildingMapPointDTO> points = await _buildingMapService.GetMapPointsAsync();
 
-            var json = JsonSerializer.Serialize(points);
-            var jsonBytes = Encoding.UTF8.GetBytes(json);
+            string json = JsonSerializer.Serialize(points);
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
 
-            using var output = new MemoryStream();
-            using (var brotli = new BrotliStream(output, CompressionLevel.Fastest, leaveOpen: true))
+            using MemoryStream output = new MemoryStream();
+            using (BrotliStream brotli = new BrotliStream(output, CompressionLevel.Fastest, leaveOpen: true))
             {
                 await brotli.WriteAsync(jsonBytes, 0, jsonBytes.Length);
             }
@@ -58,7 +59,7 @@ namespace ElectricityAPI.Controllers
             page = page < 1 ? 1 : page;
             pageSize = pageSize < 1 ? 10 : pageSize;
 
-            var result = await _buildingQueryService.GetPagedBuildingsAsync(page, pageSize);
+            PagedResultDTO<BuildingDTO> result = await _buildingQueryService.GetPagedBuildingsAsync(page, pageSize);
             return Ok(result);
         }
     }

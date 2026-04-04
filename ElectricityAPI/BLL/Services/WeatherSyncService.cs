@@ -20,8 +20,8 @@ namespace BLL.Services
 
         public async Task SyncWeatherAsync()
         {
-            var hasWeatherData = await _weatherRepository.HasAnyAsync();
-            var pastDays = hasWeatherData ? 0 : 60;
+            bool hasWeatherData = await _weatherRepository.HasAnyAsync();
+            int pastDays = hasWeatherData ? 0 : 60;
             await SyncWeatherWindowAsync(pastDays, DefaultForecastDays);
         }
 
@@ -35,30 +35,30 @@ namespace BLL.Services
         {
             string url = $"https://api.open-meteo.com/v1/forecast?latitude=50.45&longitude=30.52&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,relative_humidity_2m_mean&forecast_days={forecastDays}&past_days={pastDays}&timezone=Europe%2FKyiv";
 
-            var response = await _httpClient.GetAsync(url);
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
             if (!response.IsSuccessStatusCode) return;
 
-            var jsonString = await response.Content.ReadAsStringAsync();
-            var weatherData = JsonSerializer.Deserialize<OpenMeteoResponse>(jsonString);
+            string jsonString = await response.Content.ReadAsStringAsync();
+            OpenMeteoResponse? weatherData = JsonSerializer.Deserialize<OpenMeteoResponse>(jsonString);
 
             if (weatherData?.Daily == null) return;
 
-            var parsedDates = weatherData.Daily.Time
+            List<DateTime> parsedDates = weatherData.Daily.Time
                 .Select(d => DateTime.ParseExact(d, "yyyy-MM-dd", CultureInfo.InvariantCulture))
                 .ToList();
 
-            var minDate = parsedDates.Min();
+            DateTime minDate = parsedDates.Min();
 
-            var existingByDate = await _weatherRepository.GetByStartDateAsync(minDate);
+            Dictionary<DateTime, WeatherRecord> existingByDate = await _weatherRepository.GetByStartDateAsync(minDate);
 
-            var newRecords = new List<WeatherRecord>();
-            var hasUpdatedRecords = false;
+            List<WeatherRecord> newRecords = new List<WeatherRecord>();
+            bool hasUpdatedRecords = false;
 
             for (int i = 0; i < weatherData.Daily.Time.Count; i++)
             {
-                var date = parsedDates[i];
+                DateTime date = parsedDates[i];
 
-                existingByDate.TryGetValue(date.Date, out var existingRecord);
+                existingByDate.TryGetValue(date.Date, out WeatherRecord? existingRecord);
 
                 if (existingRecord is not null)
                 {
@@ -96,8 +96,8 @@ namespace BLL.Services
 
         public async Task CleanupOldWeatherAsync()
         {
-            var now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
-            var threeMonthsAgo = now.AddMonths(-3);
+            DateTime now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
+            DateTime threeMonthsAgo = now.AddMonths(-3);
 
             await _weatherRepository.DeleteOlderThanAsync(threeMonthsAgo);
         }

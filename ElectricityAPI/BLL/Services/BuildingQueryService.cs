@@ -17,14 +17,14 @@ namespace BLL.Services
 
         public async Task<BuildingDetailsDTO?> GetBuildingDetailsAsync(int id)
         {
-            var buildingEntity = await _buildingRepository.GetByIdWithDistrictAsync(id);
+            Building? buildingEntity = await _buildingRepository.GetByIdWithDistrictAsync(id);
 
             if (buildingEntity is null)
             {
                 return null;
             }
 
-            var latestForecastEntity = await _forecastRepository.GetLatestByBuildingIdAsync(id);
+            Forecast? latestForecastEntity = await _forecastRepository.GetLatestByBuildingIdAsync(id);
 
             if (latestForecastEntity is null)
             {

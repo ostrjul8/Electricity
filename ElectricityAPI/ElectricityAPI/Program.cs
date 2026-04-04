@@ -9,9 +9,9 @@ namespace ElectricityAPI
     {
         public static async Task Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
@@ -31,12 +31,12 @@ namespace ElectricityAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            var app = builder.Build();
+            WebApplication app = builder.Build();
 
-            using (var scope = app.Services.CreateScope())
+            using (IServiceScope scope = app.Services.CreateScope())
             {
-                var services = scope.ServiceProvider;
-                var context = services.GetRequiredService<AppDbContext>();
+                IServiceProvider services = scope.ServiceProvider;
+                AppDbContext context = services.GetRequiredService<AppDbContext>();
 
                 await ElectricityAPI.Data.DatabaseSeeder.SeedBuildingsAsync(context);
             }

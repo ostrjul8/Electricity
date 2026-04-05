@@ -13,5 +13,6 @@ namespace Core.Entities
         public DateTime CreatedAt { get; set; }
 
         public ICollection<Chat> Chats { get; set; } = new List<Chat>();
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

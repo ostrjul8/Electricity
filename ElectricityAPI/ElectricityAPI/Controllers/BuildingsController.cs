@@ -1,5 +1,6 @@
 using DAL;
 using BLL.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.IO.Compression;
 using System.Text;
@@ -10,6 +11,7 @@ namespace ElectricityAPI.Controllers
 {
     [ApiController]
     [Route("api/buildings")]
+    [Authorize(Roles = "User,Admin")]
     public class BuildingsController : ControllerBase
     {
         private readonly BuildingQueryService _buildingQueryService;

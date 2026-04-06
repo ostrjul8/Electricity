@@ -76,7 +76,7 @@ namespace BLL.Services
 
         public async Task CleanupOldForecastsAsync(CancellationToken cancellationToken = default)
         {
-            DateTime now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
+            DateTime now = KyivTimeHelper.Now;
             DateTime threeMonthsAgo = now.AddMonths(-3);
 
             await _forecastRepository.DeleteOlderThanAsync(threeMonthsAgo, cancellationToken);

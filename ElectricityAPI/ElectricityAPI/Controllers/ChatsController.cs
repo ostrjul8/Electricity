@@ -40,6 +40,10 @@ namespace ElectricityAPI.Controllers
             {
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         [HttpPost("{chatId:int}/messages")]
@@ -63,23 +67,22 @@ namespace ElectricityAPI.Controllers
             {
                 return NotFound(new { error = ex.Message });
             }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetChats()
-        {
-            if (!TryGetCurrentUser(out int userId, out bool isAdmin))
+            catch (Exception ex)
             {
-                return Unauthorized(new { error = "Invalid user token." });
+                return StatusCode(500, new { error = ex.Message });
             }
-
-            List<ChatDTO> chats = await _chatService.GetChatsAsync(userId, isAdmin);
-            return Ok(chats);
         }
 
-        [HttpGet("{chatId:int}/messages")]
-        public async Task<IActionResult> GetMessages(int chatId)
+        [HttpGet("lazy")]
+        public async Task<IActionResult> GetChatsLazy(
+            [FromQuery] bool onlyUnread = false,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 20 : pageSize;
+            pageSize = pageSize > 100 ? 100 : pageSize;
+
             try
             {
                 if (!TryGetCurrentUser(out int userId, out bool isAdmin))
@@ -87,12 +90,39 @@ namespace ElectricityAPI.Controllers
                     return Unauthorized(new { error = "Invalid user token." });
                 }
 
-                List<MessageDTO> messages = await _chatService.GetMessagesAsync(userId, isAdmin, chatId);
+                PagedResultDTO<ChatDTO> chats = await _chatService.GetChatsPagedAsync(userId, isAdmin, onlyUnread, page, pageSize);
+                return Ok(chats);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("{chatId:int}/messages/lazy")]
+        public async Task<IActionResult> GetMessagesLazy(int chatId, [FromQuery] int page = 1, [FromQuery] int pageSize = 30)
+        {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 30 : pageSize;
+            pageSize = pageSize > 200 ? 200 : pageSize;
+
+            try
+            {
+                if (!TryGetCurrentUser(out int userId, out bool isAdmin))
+                {
+                    return Unauthorized(new { error = "Invalid user token." });
+                }
+
+                PagedResultDTO<MessageDTO> messages = await _chatService.GetMessagesPagedAsync(userId, isAdmin, chatId, page, pageSize);
                 return Ok(messages);
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
             }
         }
 

@@ -19,7 +19,7 @@ namespace DAL.Repositories
 
         public Task<bool> ExistsByUsernameAsync(string username)
         {
-            return _context.Users.AnyAsync(u => u.Username == username);
+            return _context.Users.AnyAsync(u => u.Username.ToLowerInvariant() == username.ToLowerInvariant());
         }
 
         public Task<User?> GetByEmailAsync(string email)

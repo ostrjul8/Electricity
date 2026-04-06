@@ -34,7 +34,7 @@ namespace BLL.Services
                 ChatId = chat.Id,
                 IsAdmin = false,
                 Text = text.Trim(),
-                SentAt = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv")
+                SentAt = KyivTimeHelper.Now
             };
 
             await _chatRepository.AddMessageAsync(message);
@@ -62,9 +62,14 @@ namespace BLL.Services
                 throw new ArgumentException("Message text is required.");
             }
 
-            Chat chat = isAdmin
-                ? await _chatRepository.GetByIdAsync(chatId) ?? throw new KeyNotFoundException("Chat not found.")
-                : await _chatRepository.GetByIdForUserAsync(chatId, userId) ?? throw new KeyNotFoundException("Chat not found.");
+            int? filteredUserId = isAdmin ? null : userId;
+            
+            Chat? chat = await _chatRepository.GetByIdAsync(filteredUserId, chatId);
+
+            if (chat == null)
+            {
+                throw new KeyNotFoundException("Chat not found.");
+            }
 
             chat.IsRead = false;
 
@@ -73,7 +78,7 @@ namespace BLL.Services
                 ChatId = chat.Id,
                 IsAdmin = isAdmin,
                 Text = text.Trim(),
-                SentAt = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv")
+                SentAt = KyivTimeHelper.Now
             };
 
             await _chatRepository.AddMessageAsync(message);
@@ -88,26 +93,40 @@ namespace BLL.Services
                 SentAt = message.SentAt
             };
         }
-
-        public async Task<List<ChatDTO>> GetChatsAsync(int userId, bool isAdmin)
+        public async Task<PagedResultDTO<ChatDTO>> GetChatsPagedAsync(int userId, bool isAdmin, bool onlyUnread, int page, int pageSize)
         {
-            List<Chat> chats = isAdmin
-                ? await _chatRepository.GetAllAsync()
-                : await _chatRepository.GetByUserIdAsync(userId);
+            int? filteredUserId = isAdmin ? null : userId;
+            int totalCount = await _chatRepository.GetChatsCountAsync(filteredUserId, onlyUnread);
+            int totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / pageSize);
+            int skip = (page - 1) * pageSize;
 
-            return chats.Select(c => new ChatDTO
+            List<Chat> chats = await _chatRepository.GetChatsPagedAsync(filteredUserId, onlyUnread, skip, pageSize);
+
+            return new PagedResultDTO<ChatDTO>
             {
-                Id = c.Id,
-                UserId = c.UserId,
-                IsRead = c.IsRead
-            }).ToList();
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                Items = chats.Select(c => new ChatDTO
+                {
+                    Id = c.Id,
+                    UserId = c.UserId,
+                    IsRead = c.IsRead
+                }).ToList()
+            };
         }
 
-        public async Task<List<MessageDTO>> GetMessagesAsync(int userId, bool isAdmin, int chatId)
+        public async Task<PagedResultDTO<MessageDTO>> GetMessagesPagedAsync(int userId, bool isAdmin, int chatId, int page, int pageSize)
         {
-            Chat chat = isAdmin
-                ? await _chatRepository.GetByIdAsync(chatId) ?? throw new KeyNotFoundException("Chat not found.")
-                : await _chatRepository.GetByIdForUserAsync(chatId, userId) ?? throw new KeyNotFoundException("Chat not found.");
+            int? filteredUserId = isAdmin ? null : userId;
+
+            Chat? chat = await _chatRepository.GetByIdAsync(filteredUserId, chatId);
+
+            if (chat == null)
+            {
+                throw new KeyNotFoundException("Chat not found.");
+            }
 
             if (!chat.IsRead)
             {
@@ -115,16 +134,27 @@ namespace BLL.Services
                 await _chatRepository.SaveChangesAsync();
             }
 
-            List<Message> messages = await _chatRepository.GetMessagesByChatIdAsync(chat.Id);
+            int totalCount = await _chatRepository.GetMessagesCountByChatIdAsync(chat.Id);
+            int totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / pageSize);
+            int skip = (page - 1) * pageSize;
 
-            return messages.Select(m => new MessageDTO
+            List<Message> messages = await _chatRepository.GetMessagesPagedByChatIdAsync(chat.Id, skip, pageSize);
+
+            return new PagedResultDTO<MessageDTO>
             {
-                Id = m.Id,
-                ChatId = m.ChatId,
-                IsAdmin = m.IsAdmin,
-                Text = m.Text,
-                SentAt = m.SentAt
-            }).ToList();
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                Items = messages.Select(m => new MessageDTO
+                {
+                    Id = m.Id,
+                    ChatId = m.ChatId,
+                    IsAdmin = m.IsAdmin,
+                    Text = m.Text,
+                    SentAt = m.SentAt
+                }).ToList()
+            };
         }
     }
 }

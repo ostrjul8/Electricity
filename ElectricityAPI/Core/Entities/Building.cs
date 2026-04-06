@@ -20,5 +20,6 @@ namespace Core.Entities
         public District? District { get; set; }
         public ICollection<Forecast> Forecasts { get; set; } = new List<Forecast>();
         public ICollection<ConsumptionRecord> ConsumptionRecords { get; set; } = new List<ConsumptionRecord>();
+        public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
     }
 }

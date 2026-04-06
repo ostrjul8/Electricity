@@ -1,3 +1,4 @@
+using BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -16,11 +17,18 @@ namespace ElectricityAPI.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok(new 
-            { 
-                status = "Healthy", 
-                timestamp = DateTime.UtcNow 
-            });
+            try
+            {
+                return Ok(new
+                {
+                    status = "Healthy",
+                    timestamp = KyivTimeHelper.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
     }
 }

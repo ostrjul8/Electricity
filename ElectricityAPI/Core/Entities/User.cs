@@ -14,5 +14,6 @@ namespace Core.Entities
 
         public ICollection<Chat> Chats { get; set; } = new List<Chat>();
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+        public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
     }
 }

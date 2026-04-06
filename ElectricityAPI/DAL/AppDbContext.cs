@@ -18,6 +18,7 @@ namespace DAL
         public DbSet<WeatherRecord> WeatherRecords { get; set; }
         public DbSet<ConsumptionRecord> ConsumptionRecords { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Favorite> Favorites { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,6 +44,22 @@ namespace DAL
 
             modelBuilder.Entity<RefreshToken>()
                 .HasIndex(rt => rt.TokenHash)
+                .IsUnique();
+
+            modelBuilder.Entity<Favorite>()
+                .HasOne(f => f.User)
+                .WithMany(u => u.Favorites)
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Favorite>()
+                .HasOne(f => f.Building)
+                .WithMany(b => b.Favorites)
+                .HasForeignKey(f => f.BuildingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Favorite>()
+                .HasIndex(f => new { f.UserId, f.BuildingId })
                 .IsUnique();
         }
     }

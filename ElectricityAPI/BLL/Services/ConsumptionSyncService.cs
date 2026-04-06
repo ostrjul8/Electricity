@@ -22,7 +22,7 @@ namespace BLL.Services
         public async Task SyncConsumptionAsync()
         {
             bool hasConsumptionData = await _consumptionRepository.HasAnyAsync();
-            DateTime today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv").Date;
+            DateTime today = KyivTimeHelper.Today;
             DateTime startDate = hasConsumptionData ? today : today.AddDays(-60);
 
             await SyncConsumptionWindowAsync(startDate, !hasConsumptionData);
@@ -30,7 +30,7 @@ namespace BLL.Services
 
         public async Task EnsureConsumptionWindowAsync()
         {
-            DateTime today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv").Date;
+            DateTime today = KyivTimeHelper.Today;
             DateTime startDate = today.AddDays(-60);
             bool hasConsumptionData = await _consumptionRepository.HasAnyAsync();
 
@@ -55,7 +55,7 @@ namespace BLL.Services
                 return;
             }
 
-            DateTime today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv").Date;
+            DateTime today = KyivTimeHelper.Today;
 
             if (isInitialFill)
             {
@@ -150,7 +150,7 @@ namespace BLL.Services
 
         public async Task CleanupOldConsumptionAsync()
         {
-            DateTime now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
+            DateTime now = KyivTimeHelper.Now;
             DateTime threeMonthsAgo = now.AddMonths(-3);
 
             await _consumptionRepository.DeleteOlderThanAsync(threeMonthsAgo);

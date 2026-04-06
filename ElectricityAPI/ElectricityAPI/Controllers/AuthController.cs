@@ -26,7 +26,7 @@ namespace ElectricityAPI.Controllers
                 request.Email = request.Email.Trim().ToLowerInvariant();
                 request.Username = request.Username.Trim();
 
-                var result = await _authService.RegisterAsync(request);
+                AuthResponseDTO result = await _authService.RegisterAsync(request);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -47,7 +47,7 @@ namespace ElectricityAPI.Controllers
             {
                 request.Email = request.Email.Trim().ToLowerInvariant();
 
-                var result = await _authService.LoginAsync(request);
+                AuthResponseDTO result = await _authService.LoginAsync(request);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -66,7 +66,7 @@ namespace ElectricityAPI.Controllers
         {
             try
             {
-                var result = await _authService.RefreshAsync(request);
+                AuthResponseDTO result = await _authService.RefreshAsync(request);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -83,8 +83,15 @@ namespace ElectricityAPI.Controllers
         [HttpGet("users")]
         public async Task<IActionResult> GetUsers()
         {
-            var users = await _authService.GetUsersAsync();
-            return Ok(users);
+            try
+            {
+                List<UserDTO> users = await _authService.GetUsersAsync();
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
     }
 }

@@ -29,11 +29,15 @@ namespace ElectricityAPI
             builder.Services.AddScoped<WeatherRepository>();
             builder.Services.AddScoped<ConsumptionRepository>();
             builder.Services.AddScoped<ForecastRepository>();
+            builder.Services.AddScoped<ChatRepository>();
             builder.Services.AddScoped<RefreshTokenRepository>();
+            builder.Services.AddScoped<FavoriteRepository>();
             builder.Services.AddScoped<BuildingQueryService>();
             builder.Services.AddScoped<BuildingMapService>();
             builder.Services.AddScoped<UserRepository>();
             builder.Services.AddScoped<AuthService>();
+            builder.Services.AddScoped<ChatService>();
+            builder.Services.AddScoped<FavoriteService>();
 
             string jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured.");
             string? jwtIssuer = builder.Configuration["Jwt:Issuer"];

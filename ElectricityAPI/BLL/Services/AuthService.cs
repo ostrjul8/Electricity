@@ -49,7 +49,7 @@ namespace BLL.Services
                 Email = email,
                 PasswordHash = HashPassword(request.Password),
                 IsAdmin = false,
-                CreatedAt = GetKyivNow()
+                CreatedAt = KyivTimeHelper.Now
             };
 
             await _userRepository.AddAsync(user);
@@ -88,7 +88,7 @@ namespace BLL.Services
                 throw new UnauthorizedAccessException("Invalid refresh token.");
             }
 
-            DateTime kyivNow = GetKyivNow();
+            DateTime kyivNow = KyivTimeHelper.Now;
 
             if (storedToken.ExpiresAt <= kyivNow)
             {
@@ -105,7 +105,7 @@ namespace BLL.Services
 
         public async Task<List<UserDTO>> GetUsersAsync()
         {
-            var users = await _userRepository.GetAllAsync();
+            List<User> users = await _userRepository.GetAllAsync();
 
             return users.Select(u => new UserDTO
             {
@@ -142,8 +142,8 @@ namespace BLL.Services
             {
                 TokenHash = refreshTokenHash,
                 UserId = user.Id,
-                CreatedAt = GetKyivNow(),
-                ExpiresAt = GetKyivNow().AddDays(refreshExpiresDays)
+                CreatedAt = KyivTimeHelper.Now,
+                ExpiresAt = KyivTimeHelper.Now.AddDays(refreshExpiresDays)
             };
 
             await _refreshTokenRepository.AddAsync(refreshTokenEntity);
@@ -260,9 +260,5 @@ namespace BLL.Services
             return Convert.ToBase64String(hash);
         }
 
-        private static DateTime GetKyivNow()
-        {
-            return TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
-        }
     }
 }

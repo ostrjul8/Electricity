@@ -96,7 +96,7 @@ namespace BLL.Services
 
         public async Task CleanupOldWeatherAsync()
         {
-            DateTime now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Kyiv");
+            DateTime now = KyivTimeHelper.Now;
             DateTime threeMonthsAgo = now.AddMonths(-3);
 
             await _weatherRepository.DeleteOlderThanAsync(threeMonthsAgo);

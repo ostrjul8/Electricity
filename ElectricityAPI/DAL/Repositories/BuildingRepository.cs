@@ -51,6 +51,16 @@ namespace DAL.Repositories
             return _context.Buildings.CountAsync();
         }
 
+        public Task<Building?> GetByAddressAsync(string address)
+        {
+            return _context.Buildings
+                .AsNoTracking()
+                .Include(b => b.District)
+                .Where(b => EF.Functions.ILike(b.Address, $"%{address}%"))
+                .OrderBy(b => b.Id)
+                .FirstOrDefaultAsync();
+        }
+
         public Task<List<Building>> GetPagedWithDistrictAsync(int skip, int take)
         {
             return _context.Buildings

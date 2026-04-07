@@ -97,5 +97,36 @@ namespace BLL.Services
                 Items = items
             };
         }
+
+        public async Task<BuildingDTO?> GetByAddressAsync(string address)
+        {
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                throw new ArgumentException("Address is required.");
+            }
+
+            Building? building = await _buildingRepository.GetByAddressAsync(address.Trim());
+
+            if (building is null)
+            {
+                return null;
+            }
+
+            return new BuildingDTO
+            {
+                Id = building.Id,
+                Type = building.Type,
+                Address = building.Address,
+                Name = building.Name,
+                Floors = building.Floors,
+                Material = building.Material,
+                Area = building.Area,
+                Longitude = building.Longitude,
+                Latitude = building.Latitude,
+                DistrictId = building.DistrictId,
+                DistrictName = building.District?.Name ?? string.Empty,
+                AverageConsumption = building.AverageConsumption
+            };
+        }
     }
 }

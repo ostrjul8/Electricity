@@ -85,5 +85,29 @@ namespace ElectricityAPI.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+
+        [HttpGet("search-by-address")]
+        public async Task<IActionResult> GetByAddress([FromQuery] string address)
+        {
+            try
+            {
+                BuildingDTO? result = await _buildingQueryService.GetByAddressAsync(address);
+
+                if (result is null)
+                {
+                    return NotFound(new { message = "Building not found by address." });
+                }
+
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 }

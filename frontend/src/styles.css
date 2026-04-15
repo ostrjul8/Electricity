@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+:root {
+	--white-color: #ffffff;
+
+	--main-color: #1f6feb;
+	--main-hover-color: #155bc1;
+	--main-soft-color: #eff5ff;
+	--main-soft-alt-color: #edf4ff;
+	--main-soft-border-color: #9bc0ff;
+	--main-soft-border-hover-color: #7cabfb;
+	--main-overlay-8: rgb(31 111 235 / 8%);
+
+	--gray-color: #6b7280;
+	--gray-hover-color: #4b5563;
+	--gray-overlay-10: rgb(107 114 128 / 10%);
+
+	--danger-color: #dc2626;
+	--danger-hover-color: #b91c1c;
+
+	--main-font-color: #0f172a;
+	--main-font-disabled-color: #94a3b8;
+	--disabled-color: #e2e8f0;
+	--outline-color: rgb(31 111 235 / 32%);
+	--shadow-color-10: rgb(15 23 42 / 10%);
+}
+
+body {
+    color-scheme: light;
+    overflow-x: hidden;
+    font-family: "Inter";
+}

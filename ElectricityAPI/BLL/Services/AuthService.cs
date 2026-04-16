@@ -1,6 +1,7 @@
 using BLL.Models;
 using Core.Entities;
 using DAL.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -53,7 +54,14 @@ namespace BLL.Services
             };
 
             await _userRepository.AddAsync(user);
-            await _userRepository.SaveChangesAsync();
+            try
+            {
+                await _userRepository.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                throw new InvalidOperationException("Email or username is already in use.");
+            }
 
             return await CreateAndPersistTokensAsync(user);
         }
@@ -81,9 +89,14 @@ namespace BLL.Services
             }
 
             string refreshTokenHash = HashRefreshToken(request.RefreshToken);
-            RefreshToken? storedToken = await _refreshTokenRepository.GetActiveByHashAsync(refreshTokenHash);
+            RefreshToken? storedToken = await _refreshTokenRepository.GetByHashAsync(refreshTokenHash);
 
             if (storedToken is null)
+            {
+                throw new UnauthorizedAccessException("Invalid refresh token.");
+            }
+
+            if (storedToken.RevokedAt is not null)
             {
                 throw new UnauthorizedAccessException("Invalid refresh token.");
             }
@@ -92,13 +105,15 @@ namespace BLL.Services
 
             if (storedToken.ExpiresAt <= kyivNow)
             {
-                storedToken.RevokedAt = kyivNow;
-                await _refreshTokenRepository.SaveChangesAsync();
+                await _refreshTokenRepository.TryRevokeAsync(storedToken.Id, kyivNow);
                 throw new UnauthorizedAccessException("Refresh token expired.");
             }
 
-            storedToken.RevokedAt = kyivNow;
-            await _refreshTokenRepository.SaveChangesAsync();
+            int affectedRows = await _refreshTokenRepository.TryRevokeAsync(storedToken.Id, kyivNow);
+            if (affectedRows == 0)
+            {
+                throw new UnauthorizedAccessException("Invalid refresh token.");
+            }
 
             return await CreateAndPersistTokensAsync(storedToken.User);
         }

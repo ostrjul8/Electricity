@@ -1,6 +1,7 @@
 using BLL.Models;
 using Core.Entities;
 using DAL.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace BLL.Services
 {
@@ -24,12 +25,6 @@ namespace BLL.Services
                 throw new KeyNotFoundException("Building not found.");
             }
 
-            bool alreadyExists = await _favoriteRepository.ExistsAsync(userId, buildingId);
-            if (alreadyExists)
-            {
-                throw new InvalidOperationException("Building is already in favorites.");
-            }
-
             Favorite favorite = new Favorite
             {
                 UserId = userId,
@@ -37,7 +32,14 @@ namespace BLL.Services
             };
 
             await _favoriteRepository.AddAsync(favorite);
-            await _favoriteRepository.SaveChangesAsync();
+            try
+            {
+                await _favoriteRepository.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                throw new InvalidOperationException("Building is already in favorites.");
+            }
 
             return MapBuilding(building);
         }

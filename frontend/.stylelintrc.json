@@ -1,0 +1,54 @@
+{
+    "extends": [
+        "stylelint-config-standard",
+        "stylelint-config-recess-order"
+    ],
+    "rules": {
+        "selector-class-pattern": null,
+        "color-hex-length": "long",
+        "color-function-notation": "legacy",
+        "alpha-value-notation": "number",
+        "media-feature-range-notation": "prefix",
+        "no-descending-specificity": null,
+        "declaration-block-no-redundant-longhand-properties": null,
+        "font-family-no-missing-generic-family-keyword": null,
+        "selector-pseudo-element-no-unknown": [
+            true,
+            {
+                "ignorePseudoElements": [
+                    "ng-deep"
+                ]
+            }
+        ],
+        "comment-empty-line-before": [
+            "always",
+            {
+                "except": [
+                    "first-nested"
+                ],
+                "ignore": [
+                    "after-comment",
+                    "stylelint-commands"
+                ]
+            }
+        ],
+        "selector-max-id": 0,
+        "font-weight-notation": "numeric",
+        "keyframe-selector-notation": "percentage-unless-within-keyword-only-block",
+        "selector-type-no-unknown": null,
+        "selector-not-notation": null,
+        "keyframes-name-pattern": null,
+        "custom-property-empty-line-before": null,
+        "declaration-property-value-no-unknown": [
+            true,
+            {
+                "ignoreProperties": {
+                    "/^background-/": ["/^linear-gradient/"],
+                    "/.+/": [
+                        "/calc/"
+                    ]
+                }
+            }
+        ]
+    }
+}

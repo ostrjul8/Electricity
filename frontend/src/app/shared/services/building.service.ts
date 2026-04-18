@@ -14,6 +14,24 @@ export class BuildingService {
     private readonly useMockSearchResults: boolean = true;
     private readonly mockSearchResults: BuildingType[] = this.createMockSearchResults();
 
+    public async downloadCsvReport(id: number): Promise<{ fileName: string; blob: Blob }> {
+        const response = await firstValueFrom(
+            this.httpClient.get(`${environment.serverURL}/api/buildings/${id}/csv-report`, {
+                headers: this.createAuthorizationHeaders(),
+                observe: "response",
+                responseType: "blob",
+            }),
+        );
+
+        const fallbackFileName: string = `building-${id}-report.csv`;
+        const fileName: string = this.extractFileName(response.headers.get("content-disposition"), fallbackFileName);
+
+        return {
+            fileName,
+            blob: response.body ?? new Blob([], { type: "text/csv;charset=utf-8" }),
+        };
+    }
+
     public async getPaged(page: number = 1, pageSize: number = 20): Promise<PagedResultType<BuildingType>> {
         const normalizedPage: number = Math.max(1, Math.trunc(page));
         const normalizedPageSize: number = Math.max(1, Math.trunc(pageSize));

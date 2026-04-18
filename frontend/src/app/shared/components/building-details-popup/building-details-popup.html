@@ -1,3 +1,62 @@
 <ui-popup [(isOpen)]="isOpen" [title]="building() ? building()!.name : 'Деталі будівлі'" size="large" (closed)="close()">
-    
+    @if (loading()) {
+        <div class="building-details-popup__state">Завантаження деталей...</div>
+    } @else if (errorMessage(); as error) {
+        <p class="building-details-popup__error">{{ error }}</p>
+    } @else if (building(); as currentBuilding) {
+        <section class="building-details">
+            <div class="building-details__top">
+                <div>
+                    <p class="building-details__eyebrow">{{ currentBuilding.type }}</p>
+                    <h3 class="building-details__title">{{ currentBuilding.name }}</h3>
+                    <p class="building-details__address">{{ currentBuilding.address }}</p>
+                </div>
+
+                <div class="building-details__chips">
+                    <button
+                        type="button"
+                        class="building-details__export"
+                        [disabled]="exportLoading()"
+                        (click)="exportCsvReport()"
+                    >
+                        {{ exportLoading() ? 'Формування CSV...' : 'Завантажити CSV звіт' }}
+                    </button>
+                    <span class="building-details__chip">{{ currentBuilding.districtName }}</span>
+                    <span class="building-details__chip">{{ currentBuilding.floors }} пов.</span>
+                    <span class="building-details__chip">{{ currentBuilding.material }}</span>
+                </div>
+            </div>
+
+            <dl class="building-details__grid">
+                <div><dt>ID</dt><dd>{{ currentBuilding.id }}</dd></div>
+                <div><dt>Площа</dt><dd>{{ currentBuilding.area | number:'1.0-2' }} м²</dd></div>
+                <div><dt>Середнє споживання</dt><dd>{{ currentBuilding.averageConsumption | number:'1.0-2' }}</dd></div>
+                <div><dt>Координати</dt><dd>{{ currentBuilding.latitude | number:'1.4-4' }}, {{ currentBuilding.longitude | number:'1.4-4' }}</dd></div>
+            </dl>
+
+            @if (forecast(); as currentForecast) {
+                <section class="forecast-card">
+                    <div class="forecast-card__header">
+                        <h4 class="forecast-card__title">Прогноз споживання</h4>
+                        <span class="forecast-card__date">{{ forecastDate() }}</span>
+                    </div>
+
+                    <div class="forecast-chart">
+                        @for (bar of forecastBars(); track bar.label) {
+                            <div class="forecast-chart__item">
+                                <div class="forecast-chart__bar-wrap">
+                                    <div class="forecast-chart__bar" [style.height.%]="getBarHeight(bar.value, bar.maxValue)"></div>
+                                </div>
+
+                                <div class="forecast-chart__meta">
+                                    <span class="forecast-chart__label">{{ bar.label }}</span>
+                                    <strong class="forecast-chart__value">{{ getBarLabel(bar.value) }}</strong>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+        </section>
+    }
 </ui-popup>

@@ -1,0 +1,209 @@
+.building-details-popup__state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    color: var(--secondary-color);
+}
+
+.building-details-popup__error {
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgb(254 226 226 / 78%);
+    color: #991b1b;
+}
+
+.building-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.building-details__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.building-details__eyebrow {
+    margin: 0 0 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--secondary-color);
+}
+
+.building-details__title {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--main-font-color);
+}
+
+.building-details__address {
+    margin: 6px 0 0;
+    color: var(--secondary-color);
+}
+
+.building-details__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.building-details__export {
+    border: 1px solid rgb(31 111 235 / 22%);
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: rgb(239 246 255 / 90%);
+    color: var(--main-color);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.building-details__export:hover:enabled {
+    transform: translateY(-1px);
+    background: rgb(219 234 254 / 95%);
+}
+
+.building-details__export:disabled {
+    cursor: not-allowed;
+    background: var(--disabled-color);
+    border-color: transparent;
+    color: var(--main-font-disabled-color);
+}
+
+.building-details__chip {
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: var(--main-soft-color);
+    color: var(--main-font-color);
+    font-size: 12px;
+}
+
+.building-details__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin: 0;
+}
+
+.building-details__grid div {
+    padding: 12px;
+    border-radius: 14px;
+    background: rgb(248 250 252 / 90%);
+}
+
+.building-details__grid dt {
+    margin-bottom: 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--secondary-color);
+}
+
+.building-details__grid dd {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--main-font-color);
+}
+
+.forecast-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+    border: 1px solid rgb(31 111 235 / 14%);
+}
+
+.forecast-card__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
+
+.forecast-card__title {
+    margin: 0;
+    font-size: 16px;
+    color: var(--main-font-color);
+}
+
+.forecast-card__date {
+    font-size: 12px;
+    color: var(--secondary-color);
+}
+
+.forecast-chart {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    align-items: end;
+    min-height: 220px;
+}
+
+.forecast-chart__item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+}
+
+.forecast-chart__bar-wrap {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex: 1;
+    min-height: 170px;
+    padding: 10px 10px 0;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.forecast-chart__bar {
+    width: 100%;
+    max-width: 84px;
+    min-height: 12px;
+    border-radius: 14px 14px 8px 8px;
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 10px 18px rgb(29 78 216 / 18%);
+    transition: height 0.2s ease;
+}
+
+.forecast-chart__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.forecast-chart__label {
+    font-size: 12px;
+    color: var(--secondary-color);
+}
+
+.forecast-chart__value {
+    font-size: 13px;
+    color: var(--main-font-color);
+}
+
+@media (max-width: 640px) {
+    .building-details__top {
+        flex-direction: column;
+    }
+
+    .building-details__chips {
+        justify-content: flex-start;
+    }
+
+    .forecast-chart {
+        grid-template-columns: 1fr;
+    }
+}

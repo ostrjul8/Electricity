@@ -1,10 +1,10 @@
 <div class="sidebar">
     <nav class="sidebar__top-block">
-        <app-nav-item icon="fa-regular fa-home" label="Карта" path="/map"></app-nav-item>
-        <app-nav-item icon="fa-regular fa-home" label="Список" path="/list"></app-nav-item>
+        <ui-button [routerLinkValue]="['/map']" [isFullWidth]="true" type="empty" label="Карта" icon="fa-regular fa-map"></ui-button>
+        <ui-button [routerLinkValue]="['/building-list']" [isFullWidth]="true" type="empty" label="Список" icon="fa-solid fa-list"></ui-button>
+        <ui-button [routerLinkValue]="['/chats']" [isFullWidth]="true" type="empty" label="Чати" icon="fa-regular fa-comments"></ui-button>
     </nav>
     <nav class="sidebar__bottom-block">
-        <app-nav-item icon="fa-regular fa-gear" label="Питання" path="/settings"></app-nav-item>
-        <app-nav-item icon="fa-regular fa-right-from-bracket" label="Профіль" path="/profile"></app-nav-item>
+        <ui-button [routerLinkValue]="['/profile']" [isFullWidth]="true" type="empty" label="Профіль" icon="fa-regular fa-user"></ui-button>
     </nav>
 </div>

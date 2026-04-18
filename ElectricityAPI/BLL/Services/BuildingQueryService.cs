@@ -97,6 +97,15 @@ namespace BLL.Services
                 return null;
             }
 
+            List<ConsumptionPointDTO> recentConsumptions = (await _consumptionRepository.GetRecentByBuildingIdAsync(id, 4))
+                .OrderBy(record => record.Date)
+                .Select(record => new ConsumptionPointDTO
+                {
+                    Date = record.Date,
+                    Amount = record.ConsumptionAmount
+                })
+                .ToList();
+
             BuildingDTO building = new BuildingDTO
             {
                 Id = buildingEntity.Id,
@@ -126,7 +135,8 @@ namespace BLL.Services
             return new BuildingDetailsDTO
             {
                 Building = building,
-                LatestForecast = latestForecast
+                LatestForecast = latestForecast,
+                RecentConsumptions = recentConsumptions
             };
         }
 

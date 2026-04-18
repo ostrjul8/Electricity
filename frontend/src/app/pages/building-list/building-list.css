@@ -66,7 +66,7 @@
 
 .building-list-page__grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+	grid-template-columns: 1;
 	gap: 14px;
 }
 
@@ -75,9 +75,10 @@
 	display: flex;
 	align-items: center;
 	gap: 24px;
+	height: 70px;
 	padding: 16px;
-	border-radius: 18px;
 	border: 1px solid var(--secondary-color);
+	border-radius: 18px;
 }
 
 .building-card__type {
@@ -88,12 +89,16 @@
 }
 
 .building-card__address {
+    width: 250px;
 	margin: 0;
 	font-size: 18px;
 }
 
 .building-card__name,
 .building-card__district {
+	width: 170px;
+    max-height: 60px;
+    overflow: auto;
 	margin: 0;
 	color: var(--secondary-color);
 	font-size: 14px;

@@ -5,11 +5,13 @@ import { BuildingService } from "@shared/services/building.service";
 import { BuildingDetailsType } from "@shared/types/BuildingDetailsType";
 import { BuildingType } from "@shared/types/BuildingType";
 import { ForecastType } from "@shared/types/ForecastType";
+import { Button } from "@shared/components/button/button";
+import { ConsumptionPointType } from "@shared/types/ConsumptionPointType";
 
 @Component({
     selector: "app-building-details-popup",
     standalone: true,
-    imports: [CommonModule, Popup],
+    imports: [CommonModule, Popup, Button],
     templateUrl: "./building-details-popup.html",
     styleUrl: "./building-details-popup.css",
 })
@@ -22,26 +24,34 @@ export class BuildingDetailsPopup {
     protected readonly exportLoading = signal<boolean>(false);
     protected readonly building = signal<BuildingType | null>(null);
     protected readonly forecast = signal<ForecastType | null>(null);
+    protected readonly recentConsumptions = signal<ConsumptionPointType[]>([]);
 
-    protected readonly forecastBars = computed<Array<{ label: string; value: number; maxValue: number }>>(() => {
+    protected readonly consumptionBars = computed<Array<{ label: string; value: number; maxValue: number; isForecast: boolean }>>(() => {
         const currentForecast: ForecastType | null = this.forecast();
+        const recentPoints: ConsumptionPointType[] = this.recentConsumptions();
 
         if (!currentForecast) {
             return [];
         }
 
-        const values: Array<{ label: string; value: number }> = [
-            { label: "День 1", value: currentForecast.consumptionDay1 },
-            { label: "День 2", value: currentForecast.consumptionDay2 },
-            { label: "День 3", value: currentForecast.consumptionDay3 },
+        const values: Array<{ label: string; value: number; isForecast: boolean }> = [
+            ...recentPoints.map((point: ConsumptionPointType) => ({
+                label: this.formatChartDate(point.date),
+                value: point.amount,
+                isForecast: false,
+            })),
+            { label: "+1д", value: currentForecast.consumptionDay1, isForecast: true },
+            { label: "+2д", value: currentForecast.consumptionDay2, isForecast: true },
+            { label: "+3д", value: currentForecast.consumptionDay3, isForecast: true },
         ];
 
         const maxValue: number = Math.max(...values.map((item: { value: number }) => item.value), 1);
 
-        return values.map((item: { label: string; value: number }) => ({
+        return values.map((item: { label: string; value: number; isForecast: boolean }) => ({
             label: item.label,
             value: item.value,
             maxValue,
+            isForecast: item.isForecast,
         }));
     });
 
@@ -67,12 +77,14 @@ export class BuildingDetailsPopup {
         this.errorMessage.set(null);
         this.building.set(null);
         this.forecast.set(null);
+        this.recentConsumptions.set([]);
 
         try {
             const details: BuildingDetailsType = await this.buildingService.getById(buildingId);
             
             this.building.set(details.building);
             this.forecast.set(details.latestForecast);
+            this.recentConsumptions.set(details.recentConsumptions ?? []);
         } catch (error) {
             this.errorMessage.set(this.getReadableError(error, "Не вдалося завантажити деталі будівлі."));
         } finally {
@@ -117,6 +129,13 @@ export class BuildingDetailsPopup {
 
     protected getBarLabel(value: number): string {
         return value.toFixed(2);
+    }
+
+    private formatChartDate(isoDate: string): string {
+        return new Intl.DateTimeFormat("uk-UA", {
+            day: "2-digit",
+            month: "2-digit",
+        }).format(new Date(isoDate));
     }
 
     private getReadableError(error: unknown, fallbackMessage: string): string {

@@ -154,7 +154,7 @@ export class BuildingList implements OnInit, OnDestroy {
 
     private async loadSearchSuggestions(query: string, requestId: number): Promise<void> {
         try {
-            const suggestions: BuildingType[] = await this.buildingService.searchByAddress(query, 5);
+            const suggestions: BuildingType[] = await this.buildingService.searchByAddress(query, 10);
 
             if (requestId !== this.searchSuggestionsRequestId) {
                 return;

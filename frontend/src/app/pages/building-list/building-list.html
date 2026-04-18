@@ -2,9 +2,6 @@
     <header class="building-list-page__header">
         <div class="building-list-page__titles">
             <h1 class="building-list-page__title">{{ title() }}</h1>
-            <p class="building-list-page__subtitle">
-                Переглядай будівлі, шукай за адресою і додавай обрані в один клік.
-            </p>
         </div>
 
         <span class="building-list-page__counter">Всього будівель: {{ totalCount() }}</span>
@@ -58,7 +55,7 @@
     @if (canLoadMore()) {
         <div class="building-list-page__load-more">
             <ui-button
-                (click)="loadMore()"
+                (buttonClick)="loadMore()"
                 [isDisabled]="loading() || isLoadingMore()"
                 [label]="isLoadingMore() ? 'Завантаження...' : 'Показати ще'"
             ></ui-button>

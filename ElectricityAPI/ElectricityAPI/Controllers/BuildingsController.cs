@@ -11,7 +11,6 @@ namespace ElectricityAPI.Controllers
 {
     [ApiController]
     [Route("api/buildings")]
-    [Authorize(Roles = "User,Admin")]
     public class BuildingsController : ControllerBase
     {
         private readonly BuildingQueryService _buildingQueryService;
@@ -69,6 +68,37 @@ namespace ElectricityAPI.Controllers
             }
         }
 
+        [HttpGet("map-points/anomalies")]
+        public async Task<IActionResult> GetAnomalyMapPoints([FromQuery] double deviationPercent)
+        {
+            try
+            {
+                if (deviationPercent < 0)
+                {
+                    return BadRequest(new { error = "deviationPercent must be greater than or equal to 0." });
+                }
+
+                List<BuildingMapPointDTO> points = await _buildingMapService.GetAnomalyMapPointsAsync(deviationPercent);
+
+                string json = JsonSerializer.Serialize(points);
+                byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+
+                using MemoryStream output = new MemoryStream();
+                using (BrotliStream brotli = new BrotliStream(output, CompressionLevel.Fastest, leaveOpen: true))
+                {
+                    await brotli.WriteAsync(jsonBytes, 0, jsonBytes.Length);
+                }
+
+                Response.Headers["Content-Encoding"] = "br";
+
+                return File(output.ToArray(), "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
@@ -94,7 +124,7 @@ namespace ElectricityAPI.Controllers
                 take = take < 1 ? 1 : take;
                 take = take > 10 ? 10 : take;
             
-                List<BuildingDTO> result = await _buildingQueryService.GetByAddressAsync(address);
+                List<BuildingDTO> result = await _buildingQueryService.GetByAddressAsync(address, take);
 
                 if (result.Count == 0)
                 {

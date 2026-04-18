@@ -1,7 +1,6 @@
 import {
     AfterViewInit,
     Component,
-    computed,
     ElementRef,
     OnDestroy,
     Signal,
@@ -10,8 +9,11 @@ import {
     signal,
     viewChild,
 } from "@angular/core";
+import { ActivatedRoute } from "@angular/router";
 import { BuildingDetailsPopup } from "@shared/components/building-details-popup/building-details-popup";
 import { Input } from "@shared/components/input/input";
+import { Range } from "@shared/components/range/range";
+import { AuthService } from "@shared/services/auth.service";
 import { BuildingService } from "@shared/services/building.service";
 import { MapService } from "@shared/services/map.service";
 import { BuildingType } from "@shared/types/BuildingType";
@@ -27,7 +29,7 @@ type MapLegendItem = {
 
 @Component({
     selector: "app-map",
-    imports: [BuildingDetailsPopup, Input],
+    imports: [BuildingDetailsPopup, Input, Range],
     templateUrl: "./map.html",
     styleUrl: "./map.css",
 })
@@ -39,6 +41,9 @@ export class Map implements AfterViewInit, OnDestroy {
     protected readonly isLoading: WritableSignal<boolean> = signal<boolean>(true);
     protected readonly errorMessage: WritableSignal<string | null> = signal<string | null>(null);
     protected readonly pointsCount: WritableSignal<number> = signal<number>(0);
+    protected readonly isAdmin: WritableSignal<boolean> = signal<boolean>(false);
+    protected readonly anomaliesOnly: WritableSignal<boolean> = signal<boolean>(false);
+    protected readonly anomalyDeviationPercent: WritableSignal<number> = signal<number>(30);
 
     protected readonly searchAddress: WritableSignal<string> = signal<string>("");
     protected readonly legendItems: ReadonlyArray<MapLegendItem> = [
@@ -47,7 +52,8 @@ export class Map implements AfterViewInit, OnDestroy {
         { level: 3, name: "Рівень 2", color: "#f59e0b" },
         { level: 4, name: "Рівень 3", color: "#f97316" },
         { level: 5, name: "Рівень 4", color: "#ef4444" },
-        { level: 6, name: "Аномалія", color: "#6b0e0e" },
+        { level: 6, name: "Завеликі", color: "#6b0e0e" },
+        { level: 7, name: "Аномалія (адмін-фільтр)", color: "#7c3aed" },
     ];
     protected readonly showSearchSuggestions: WritableSignal<boolean> = signal<boolean>(false);
     protected readonly loadingSearchSuggestions: WritableSignal<boolean> = signal<boolean>(false);
@@ -62,8 +68,16 @@ export class Map implements AfterViewInit, OnDestroy {
 
     private readonly mapService: MapService = inject(MapService);
     private readonly buildingService: BuildingService = inject(BuildingService);
+    private readonly authService: AuthService = inject(AuthService);
+    private readonly activatedRoute: ActivatedRoute = inject(ActivatedRoute);
 
     public async ngAfterViewInit(): Promise<void> {
+        await this.resolveAdminState();
+
+        if (this.activatedRoute.snapshot.data["anomaliesOnly"] === true) {
+            this.anomaliesOnly.set(true);
+        }
+
         this.initializeMap();
         await this.loadMapPoints();
     }
@@ -84,6 +98,27 @@ export class Map implements AfterViewInit, OnDestroy {
 
     protected async refreshMapPoints(): Promise<void> {
         await this.loadMapPoints();
+    }
+
+    protected async handleAnomaliesOnlyChange(event: Event): Promise<void> {
+        const nextValue: boolean = (event.target as HTMLInputElement).checked;
+
+        if (nextValue && !this.isAdmin()) {
+            this.errorMessage.set("Перегляд аномалій доступний лише адміну.");
+            this.anomaliesOnly.set(false);
+            return;
+        }
+
+        this.anomaliesOnly.set(nextValue);
+        await this.loadMapPoints();
+    }
+
+    protected async handleDeviationPercentChange(nextValue: number): Promise<void> {
+        this.anomalyDeviationPercent.set(nextValue);
+
+        if (this.anomaliesOnly()) {
+            await this.loadMapPoints();
+        }
     }
 
     protected handleSearchInput(value: string): void {
@@ -132,7 +167,17 @@ export class Map implements AfterViewInit, OnDestroy {
         await this.selectSuggestion(suggestions[0]);
     }
 
-    protected async selectSuggestion(building: BuildingType): Promise<void> {
+    protected async handleSuggestionMouseDown(event: MouseEvent, building: BuildingType): Promise<void> {
+        event.preventDefault();
+        event.stopPropagation();
+
+        await this.selectSuggestion(building);
+    }
+
+    protected async selectSuggestion(building: BuildingType, event?: Event): Promise<void> {
+        event?.preventDefault();
+        event?.stopPropagation();
+
         if (this.hideSuggestionsTimeoutId !== null) {
             clearTimeout(this.hideSuggestionsTimeoutId);
             this.hideSuggestionsTimeoutId = null;
@@ -141,7 +186,9 @@ export class Map implements AfterViewInit, OnDestroy {
         this.searchAddress.set(building.address);
         this.showSearchSuggestions.set(false);
 
-        if (this.mapInstance) {
+        const hasValidCoordinates: boolean = Number.isFinite(building.latitude) && Number.isFinite(building.longitude);
+
+        if (this.mapInstance && hasValidCoordinates) {
             this.mapInstance.flyTo([building.latitude, building.longitude], 17, { animate: true, duration: 0.6 });
         }
 
@@ -205,7 +252,9 @@ export class Map implements AfterViewInit, OnDestroy {
         this.errorMessage.set(null);
 
         try {
-            const points: MapPointType[] = await this.mapService.getMapPoints();
+            const points: MapPointType[] = this.anomaliesOnly()
+                ? await this.mapService.getAnomalyMapPoints(this.anomalyDeviationPercent())
+                : await this.mapService.getMapPoints();
             const markers: Leaflet.Marker[] = points.map((point: MapPointType) => this.createMarker(point));
 
             this.clusterLayer.clearLayers();
@@ -308,6 +357,15 @@ export class Map implements AfterViewInit, OnDestroy {
         }
 
         return "Не вдалося завантажити точки для карти.";
+    }
+
+    private async resolveAdminState(): Promise<void> {
+        try {
+            const user = this.authService.user() ?? await this.authService.getAuthorizedUser();
+            this.isAdmin.set(user.role === "Admin");
+        } catch {
+            this.isAdmin.set(false);
+        }
     }
 
     private destroyMap(): void {

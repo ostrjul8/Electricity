@@ -10,8 +10,8 @@
     margin: 0;
     padding: 10px 14px;
     border-radius: 12px;
-    background: rgb(254 226 226 / 78%);
-    color: #991b1b;
+    background: var(--error-background-color);
+    color: var(--error-font-color);
 }
 
 .building-details {
@@ -27,24 +27,35 @@
     align-items: flex-start;
 }
 
-.building-details__eyebrow {
-    margin: 0 0 4px;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--secondary-color);
+.details-top__wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.building-details__title {
+.building-details__name {
     margin: 0;
-    font-size: 22px;
-    line-height: 1.2;
-    color: var(--main-font-color);
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--secondary-color);
 }
 
 .building-details__address {
-    margin: 6px 0 0;
-    color: var(--secondary-color);
+    width: 250px;
+    margin: 0;
+    font-size: 18px;
+}
+
+.building-details__item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.details-item__title {
+    height: 40px;
+    line-height: 20px;
+    font-weight: 700;
 }
 
 .building-details__chips {
@@ -52,37 +63,6 @@
     flex-wrap: wrap;
     gap: 8px;
     justify-content: flex-end;
-}
-
-.building-details__export {
-    border: 1px solid rgb(31 111 235 / 22%);
-    border-radius: 999px;
-    padding: 7px 12px;
-    background: rgb(239 246 255 / 90%);
-    color: var(--main-color);
-    font-size: 12px;
-    cursor: pointer;
-    transition: background-color 0.18s ease, transform 0.18s ease;
-}
-
-.building-details__export:hover:enabled {
-    transform: translateY(-1px);
-    background: rgb(219 234 254 / 95%);
-}
-
-.building-details__export:disabled {
-    cursor: not-allowed;
-    background: var(--disabled-color);
-    border-color: transparent;
-    color: var(--main-font-disabled-color);
-}
-
-.building-details__chip {
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: var(--main-soft-color);
-    color: var(--main-font-color);
-    font-size: 12px;
 }
 
 .building-details__grid {
@@ -94,23 +74,8 @@
 
 .building-details__grid div {
     padding: 12px;
+    border: 1px solid var(--secondary-color);
     border-radius: 14px;
-    background: rgb(248 250 252 / 90%);
-}
-
-.building-details__grid dt {
-    margin-bottom: 4px;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--secondary-color);
-}
-
-.building-details__grid dd {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--main-font-color);
 }
 
 .forecast-card {
@@ -119,8 +84,7 @@
     gap: 14px;
     padding: 14px;
     border-radius: 16px;
-    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
-    border: 1px solid rgb(31 111 235 / 14%);
+    border: 1px solid var(--secondary-color);
 }
 
 .forecast-card__header {
@@ -143,7 +107,7 @@
 
 .forecast-chart {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 10px;
     align-items: end;
     min-height: 220px;
@@ -162,9 +126,6 @@
     justify-content: center;
     flex: 1;
     min-height: 170px;
-    padding: 10px 10px 0;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.65);
 }
 
 .forecast-chart__bar {
@@ -172,9 +133,14 @@
     max-width: 84px;
     min-height: 12px;
     border-radius: 14px 14px 8px 8px;
-    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
-    box-shadow: 0 10px 18px rgb(29 78 216 / 18%);
+    background: linear-gradient(180deg, var(--main-color) 0%, var(--main-hover-color) 100%);
+    box-shadow: 0 10px 18px color-mix(in srgb, var(--main-color) 20%, transparent);
     transition: height 0.2s ease;
+}
+
+.forecast-chart__bar--history {
+    background: linear-gradient(180deg, var(--secondary-color) 0%, var(--secondary-hover-color) 100%);
+    box-shadow: 0 10px 18px color-mix(in srgb, var(--secondary-color) 20%, transparent);
 }
 
 .forecast-chart__meta {
@@ -204,6 +170,6 @@
     }
 
     .forecast-chart {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }

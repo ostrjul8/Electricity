@@ -2,9 +2,6 @@
     <header class="map-page__header">
         <div class="map-page__titles">
             <h1 class="map-page__title">Карта енергоспоживання</h1>
-            <p class="map-page__subtitle">
-                Точки завантажуються з бекенду, перетворюються у маркери і групуються в кластери при віддаленні.
-            </p>
         </div>
 
         <div class="map-page__search-block">
@@ -20,26 +17,53 @@
             ></ui-input>
 
             @if (showSearchSuggestions() && (loadingSearchSuggestions() || searchSuggestions().length > 0)) {
-                <ul class="map-page__suggestions" role="listbox" aria-label="Підказки пошуку адреси">
+                <div class="map-page__suggestions" role="listbox" aria-label="Підказки пошуку адреси">
                     @if (loadingSearchSuggestions()) {
-                        <li class="map-page__suggestion-item map-page__suggestion-item--state">Завантаження...</li>
+                        <span class="map-page__suggestion-item map-page__suggestion-item--state">Завантаження...</span>
                     } @else {
                         @for (building of searchSuggestions(); track building.id) {
-                            <li>
-                                <button
-                                    type="button"
-                                    class="map-page__suggestion-item"
-                                    (click)="selectSuggestion(building)"
-                                >
-                                    <span class="map-page__suggestion-title">{{ building.name }}</span>
-                                    <span class="map-page__suggestion-address">{{ building.address }}</span>
-                                </button>
-                            </li>
+                            <button
+                                type="button"
+                                class="map-page__suggestion-item"
+                                (mousedown)="handleSuggestionMouseDown($event, building)"
+                            >
+                                <span class="map-page__suggestion-title">{{ building.name }}</span>
+                                <span class="map-page__suggestion-address">{{ building.address }}</span>
+                            </button>
                         }
                     }
-                </ul>
+                </div>
             }
         </div>
+
+        @if (isAdmin()) {
+            <section class="map-page__anomalies-controls" aria-label="Налаштування аномалій">
+                <label class="map-page__anomalies-toggle" for="anomaliesOnly">
+                    <input
+                        id="anomaliesOnly"
+                        type="checkbox"
+                        [checked]="anomaliesOnly()"
+                        (change)="handleAnomaliesOnlyChange($event)"
+                    />
+                    <span>Показувати аномалії</span>
+                </label>
+
+                @if (anomaliesOnly()) {
+                    <ui-range
+                        [(value)]="anomalyDeviationPercent"
+                        label="Поріг відхилення (%)"
+                        hint="Показуються лише точки, де споживання вище норми на вибраний %"
+                        [minNumber]="0"
+                        [maxNumber]="300"
+                        [step]="5"
+                        [showBoundaries]="true"
+                        [showValue]="true"
+                        [isFullWidth]="true"
+                        (valueChange)="handleDeviationPercentChange($event)"
+                    ></ui-range>
+                }
+            </section>
+        }
     </header>
 
     @if (errorMessage(); as error) {

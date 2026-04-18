@@ -5,6 +5,8 @@ namespace BLL.Services
 {
     public class BuildingMapService
     {
+        private const int AnomalyColorLevel = 7;
+
         private readonly BuildingRepository _buildingRepository;
         private readonly ConsumptionRepository _consumptionRepository;
 
@@ -45,6 +47,48 @@ namespace BLL.Services
                     ? CalculateColorLevel(latestConsumption, p10, p90)
                     : 3
             }).ToList();
+        }
+
+        public async Task<List<BuildingMapPointDTO>> GetAnomalyMapPointsAsync(double deviationPercent)
+        {
+            List<Building> buildings = await _buildingRepository.GetForMapPointsAsync();
+            if (!buildings.Any())
+            {
+                return new List<BuildingMapPointDTO>();
+            }
+
+            List<ConsumptionRecord> latestConsumptionRecords = await _consumptionRepository.GetLatestPerBuildingAsync();
+            Dictionary<int, double> latestByBuildingId = latestConsumptionRecords
+                .ToDictionary(c => c.BuildingId, c => c.ConsumptionAmount);
+
+            List<(Building Building, double LatestConsumption)> anomalies = buildings
+                .Where(b => latestByBuildingId.TryGetValue(b.Id, out _))
+                .Select(b => (Building: b, LatestConsumption: latestByBuildingId[b.Id]))
+                .Where(entry => GetPositiveDeviationPercent(entry.Building.AverageConsumption, entry.LatestConsumption) >= deviationPercent)
+                .ToList();
+
+            if (!anomalies.Any())
+            {
+                return new List<BuildingMapPointDTO>();
+            }
+
+            return anomalies.Select(a => new BuildingMapPointDTO
+            {
+                Id = a.Building.Id,
+                Longitude = a.Building.Longitude,
+                Latitude = a.Building.Latitude,
+                ColorLevel = AnomalyColorLevel
+            }).ToList();
+        }
+
+        private static double GetPositiveDeviationPercent(double normalValue, double currentValue)
+        {
+            if (normalValue <= 0)
+            {
+                return currentValue > normalValue ? double.PositiveInfinity : 0;
+            }
+
+            return currentValue <= normalValue ? 0 : (currentValue - normalValue) / normalValue * 100;
         }
 
         private static int CalculateColorLevel(double value, double p10, double p90)

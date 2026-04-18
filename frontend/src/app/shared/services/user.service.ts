@@ -19,6 +19,32 @@ export class UserService {
         );
     }
 
+    public async getFavorites(): Promise<BuildingType[]> {
+        return await firstValueFrom(
+            this.httpClient.get<BuildingType[]>(`${environment.serverURL}/api/favorites`, {
+                headers: this.createAuthorizationHeaders(),
+            }),
+        );
+    }
+
+    public async addFavorite(buildingId: number): Promise<BuildingType> {
+        return await firstValueFrom(
+            this.httpClient.post<BuildingType>(
+                `${environment.serverURL}/api/favorites`,
+                { buildingId },
+                { headers: this.createAuthorizationHeaders() },
+            ),
+        );
+    }
+
+    public async removeFavorite(buildingId: number): Promise<void> {
+        await firstValueFrom(
+            this.httpClient.delete<void>(`${environment.serverURL}/api/favorites/${buildingId}`, {
+                headers: this.createAuthorizationHeaders(),
+            }),
+        );
+    }
+
     private createAuthorizationHeaders(): HttpHeaders {
         const accessToken: string | null = sessionStorage.getItem("accessToken");
 

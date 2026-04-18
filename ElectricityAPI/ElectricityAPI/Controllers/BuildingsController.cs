@@ -87,15 +87,18 @@ namespace ElectricityAPI.Controllers
         }
 
         [HttpGet("search-by-address")]
-        public async Task<IActionResult> GetByAddress([FromQuery] string address)
+        public async Task<IActionResult> GetByAddress([FromQuery] string address, [FromQuery] int take = 5)
         {
             try
             {
-                BuildingDTO? result = await _buildingQueryService.GetByAddressAsync(address);
+                take = take < 1 ? 1 : take;
+                take = take > 10 ? 10 : take;
 
-                if (result is null)
+                List<BuildingDTO> result = await _buildingQueryService.GetByAddressAsync(address);
+
+                if (result.Count == 0)
                 {
-                    return NotFound(new { message = "Building not found by address." });
+                    return NotFound(new { message = "Buildings not found by address." });
                 }
 
                 return Ok(result);

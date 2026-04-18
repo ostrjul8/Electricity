@@ -1,0 +1,69 @@
+<section class="building-list-page">
+    <header class="building-list-page__header">
+        <div class="building-list-page__titles">
+            <h1 class="building-list-page__title">{{ title() }}</h1>
+            <p class="building-list-page__subtitle">
+                Переглядай будівлі, шукай за адресою і додавай обрані в один клік.
+            </p>
+        </div>
+
+        <span class="building-list-page__counter">Всього будівель: {{ totalCount() }}</span>
+    </header>
+
+    <ui-input
+        [(value)]="searchText"
+		[isDisabled]="loading() || isLoadingMore()"
+        [isFullWidth]="true"
+        placeholder="Введіть адресу"
+        label="Адреса для пошуку"
+        hint="Введіть щонайменше 2 символи"
+        (valueChange)="handleSearchInput($event)"
+    ></ui-input>
+
+    @if (errorMessage(); as error) {
+        <p class="building-list-page__error">{{ error }}</p>
+    }
+
+    @if (loading()) {
+        <div class="building-list-page__state-card">Завантаження...</div>
+    } @else if (visibleBuildings().length === 0) {
+        <div class="building-list-page__state-card">Немає будівель для відображення.</div>
+    } @else {
+        <div class="building-list-page__grid">
+            @for (building of visibleBuildings(); track building.id) {
+                <article class="building-card" role="button" tabindex="0" (click)="openDetails(building.id)">
+                    <div class="building-card__title">
+                        <p class="building-card__type">{{ building.type }}</p>
+                        <h2 class="building-card__address">{{ building.address }}</h2>
+                    </div>
+
+                    <span class="building-card__name">{{ building.name }}</span>
+					
+                    <span class="building-card__district">{{ building.districtName }}</span>
+
+                    <ui-button
+                        class="building-card__favorite"
+                        (buttonClick)="toggleFavorite(building, $event)"
+                        [isDisabled]="isFavoriteSaving(building.id)"
+						type="empty"
+						[icon]="isFavorite(building.id) ? 'fa-solid fa-heart' : 'fa-regular fa-heart'"
+                    >
+                        {{ isFavorite(building.id) ? "Улюблена" : "В улюблені" }}
+                    </ui-button>
+                </article>
+            }
+        </div>
+    }
+
+    @if (canLoadMore()) {
+        <div class="building-list-page__load-more">
+            <ui-button
+                (click)="loadMore()"
+                [isDisabled]="loading() || isLoadingMore()"
+                [label]="isLoadingMore() ? 'Завантаження...' : 'Показати ще'"
+            ></ui-button>
+        </div>
+    }
+
+    <app-building-details-popup></app-building-details-popup>
+</section>

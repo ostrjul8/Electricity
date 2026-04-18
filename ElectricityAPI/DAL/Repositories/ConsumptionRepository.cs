@@ -29,6 +29,17 @@ namespace DAL.Repositories
                 .ToListAsync();
         }
 
+        public Task<List<ConsumptionRecord>> GetRecentByBuildingIdAsync(int buildingId, int take)
+        {
+            return _context.ConsumptionRecords
+                .AsNoTracking()
+                .Where(c => c.BuildingId == buildingId)
+                .OrderByDescending(c => c.Date)
+                .ThenByDescending(c => c.Id)
+                .Take(take)
+                .ToListAsync();
+        }
+
         public Task<Dictionary<int, ConsumptionRecord>> GetByDateAsync(DateTime date)
         {
             return _context.ConsumptionRecords

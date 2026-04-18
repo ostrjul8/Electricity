@@ -98,35 +98,30 @@ namespace BLL.Services
             };
         }
 
-        public async Task<BuildingDTO?> GetByAddressAsync(string address)
+        public async Task<List<BuildingDTO>> GetByAddressAsync(string address, int take = 5)
         {
             if (string.IsNullOrWhiteSpace(address))
             {
                 throw new ArgumentException("Address is required.");
             }
 
-            Building? building = await _buildingRepository.GetByAddressAsync(address.Trim());
+            List<Building> buildings = await _buildingRepository.GetByAddressAsync(address.Trim(), take);
 
-            if (building is null)
+            return buildings.Select(b => new BuildingDTO
             {
-                return null;
-            }
-
-            return new BuildingDTO
-            {
-                Id = building.Id,
-                Type = building.Type,
-                Address = building.Address,
-                Name = building.Name,
-                Floors = building.Floors,
-                Material = building.Material,
-                Area = building.Area,
-                Longitude = building.Longitude,
-                Latitude = building.Latitude,
-                DistrictId = building.DistrictId,
-                DistrictName = building.District?.Name ?? string.Empty,
-                AverageConsumption = building.AverageConsumption
-            };
+                Id = b.Id,
+                Type = b.Type,
+                Address = b.Address,
+                Name = b.Name,
+                Floors = b.Floors,
+                Material = b.Material,
+                Area = b.Area,
+                Longitude = b.Longitude,
+                Latitude = b.Latitude,
+                DistrictId = b.DistrictId,
+                DistrictName = b.District?.Name ?? string.Empty,
+                AverageConsumption = b.AverageConsumption
+            }).ToList();
         }
     }
 }

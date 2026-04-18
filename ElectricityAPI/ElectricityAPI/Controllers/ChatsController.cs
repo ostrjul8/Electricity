@@ -1,5 +1,6 @@
 using BLL.Models;
 using BLL.Services;
+using Core.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -8,7 +9,7 @@ namespace ElectricityAPI.Controllers
 {
     [ApiController]
     [Route("api/chats")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = AppRoles.UserAndAbove)]
     public class ChatsController : ControllerBase
     {
         private readonly ChatService _chatService;
@@ -18,27 +19,30 @@ namespace ElectricityAPI.Controllers
             _chatService = chatService;
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> CreateChat([FromBody] CreateChatRequestDTO request)
         {
             try
             {
-                if (!TryGetCurrentUser(out int userId, out bool isAdmin))
-                {
-                    return Unauthorized(new { error = "Invalid user token." });
-                }
-
-                if (isAdmin)
+                bool hasCurrentUser = TryGetCurrentUser(out int userId, out bool isAdmin);
+                
+                if (hasCurrentUser && isAdmin)
                 {
                     return Forbid();
                 }
 
-                OpenChatResponseDTO result = await _chatService.CreateChatWithFirstMessageAsync(userId, request.Text);
+                int? senderUserId = hasCurrentUser ? userId : null;
+                OpenChatResponseDTO result = await _chatService.CreateChatWithFirstMessageAsync(senderUserId, request.Text);
                 return Ok(result);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(new { error = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -139,7 +143,7 @@ namespace ElectricityAPI.Controllers
                 return false;
             }
 
-            isAdmin = User.IsInRole("Admin");
+            isAdmin = User.IsInRole(AppRoles.Admin);
             return true;
         }
     }

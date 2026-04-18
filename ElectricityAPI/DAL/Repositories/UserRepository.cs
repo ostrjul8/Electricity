@@ -27,9 +27,19 @@ namespace DAL.Repositories
             return _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public Task<User?> GetByUsernameAsync(string username)
+        {
+            return _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+        }
+
         public Task<User?> GetByIdAsync(int id)
         {
             return _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public Task<bool> ExistsByIdAsync(int id)
+        {
+            return _context.Users.AnyAsync(u => u.Id == id);
         }
 
         public Task<List<User>> GetAllAsync()

@@ -6,23 +6,45 @@ namespace BLL.Services
 {
     public class ChatService
     {
-        private readonly ChatRepository _chatRepository;
+        private const string GuestUsername = "guest_support";
+        private const string GuestEmail = "guest_support@local.invalid";
 
-        public ChatService(ChatRepository chatRepository)
+        private readonly ChatRepository _chatRepository;
+        private readonly UserRepository _userRepository;
+
+        public ChatService(ChatRepository chatRepository, UserRepository userRepository)
         {
             _chatRepository = chatRepository;
+            _userRepository = userRepository;
         }
 
-        public async Task<OpenChatResponseDTO> CreateChatWithFirstMessageAsync(int userId, string text)
+        public async Task<OpenChatResponseDTO> CreateChatWithFirstMessageAsync(int? userId, string text)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 throw new ArgumentException("Message text is required.");
             }
 
+            int resolvedUserId;
+
+            if (userId.HasValue)
+            {
+                bool userExists = await _userRepository.ExistsByIdAsync(userId.Value);
+                if (!userExists)
+                {
+                    throw new UnauthorizedAccessException("Invalid user token.");
+                }
+
+                resolvedUserId = userId.Value;
+            }
+            else
+            {
+                resolvedUserId = await EnsureGuestUserIdAsync();
+            }
+
             Chat chat = new Chat
             {
-                UserId = userId,
+                UserId = resolvedUserId,
                 IsRead = false
             };
 
@@ -34,7 +56,7 @@ namespace BLL.Services
                 ChatId = chat.Id,
                 IsAdmin = false,
                 Text = text.Trim(),
-                SentAt = KyivTimeHelper.Now
+                SentAt = DateTime.UtcNow
             };
 
             await _chatRepository.AddMessageAsync(message);
@@ -53,6 +75,35 @@ namespace BLL.Services
                     SentAt = message.SentAt
                 }
             };
+        }
+
+        private async Task<int> EnsureGuestUserIdAsync()
+        {
+            User? existingByUsername = await _userRepository.GetByUsernameAsync(GuestUsername);
+            if (existingByUsername is not null)
+            {
+                return existingByUsername.Id;
+            }
+
+            User? existingByEmail = await _userRepository.GetByEmailAsync(GuestEmail);
+            if (existingByEmail is not null)
+            {
+                return existingByEmail.Id;
+            }
+
+            User guestUser = new User
+            {
+                Username = GuestUsername,
+                Email = GuestEmail,
+                PasswordHash = "GUEST_ACCOUNT_NO_LOGIN",
+                IsAdmin = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userRepository.AddAsync(guestUser);
+            await _userRepository.SaveChangesAsync();
+
+            return guestUser.Id;
         }
 
         public async Task<MessageDTO> SendMessageAsync(int userId, bool isAdmin, int chatId, string text)
@@ -78,7 +129,7 @@ namespace BLL.Services
                 ChatId = chat.Id,
                 IsAdmin = isAdmin,
                 Text = text.Trim(),
-                SentAt = KyivTimeHelper.Now
+                SentAt = DateTime.UtcNow
             };
 
             await _chatRepository.AddMessageAsync(message);

@@ -2,7 +2,9 @@
     <nav class="sidebar__top-block">
         <ui-button [routerLinkValue]="['/map']" [isFullWidth]="true" type="empty" label="Карта" icon="fa-regular fa-map"></ui-button>
         <ui-button [routerLinkValue]="['/building-list']" [isFullWidth]="true" type="empty" label="Список" icon="fa-solid fa-list"></ui-button>
-        <ui-button [routerLinkValue]="['/chats']" [isFullWidth]="true" type="empty" label="Чати" icon="fa-regular fa-comments"></ui-button>
+        @if (showChats()) {
+            <ui-button [routerLinkValue]="['/chats']" [isFullWidth]="true" type="empty" label="Чати" icon="fa-regular fa-comments"></ui-button>
+        }
     </nav>
     <nav class="sidebar__bottom-block">
         <ui-button [routerLinkValue]="['/profile']" [isFullWidth]="true" type="empty" label="Профіль" icon="fa-regular fa-user"></ui-button>

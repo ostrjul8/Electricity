@@ -3,6 +3,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router, Event, RouterOutlet } from "@angular/router";
 import { Sidebar } from "@components/sidebar/sidebar";
 import { FloatingChat } from "@shared/components/floating-chat/floating-chat";
+import { AuthService } from "@shared/services/auth.service";
 import { filter, map } from "rxjs";
 
 @Component({
@@ -12,7 +13,13 @@ import { filter, map } from "rxjs";
     styleUrl: "./main-layout.css",
 })
 export class MainLayout {
+    private readonly isAdmin: Signal<boolean> = computed(() => {
+        const user = this.authService.user();
+        return user?.role === "Admin";
+    });
+
     private readonly router: Router = inject(Router);
+    private readonly authService = inject(AuthService);
 
     private currentUrl = toSignal(
         this.router.events.pipe(
@@ -25,6 +32,6 @@ export class MainLayout {
     protected readonly showChatButton: Signal<boolean> = computed(() => {
         const url = this.currentUrl();
 
-        return !url?.includes("/chats");
+        return !url?.includes("/chats") && !this.isAdmin();
     });
 }

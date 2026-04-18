@@ -20,7 +20,7 @@ print("Витягнення даних з БД.")
 df = pd.read_sql(query, engine)
 
 print("Підготовка даних.")
-df['Date'] = pd.to_datetime(df['Date'])
+df['Date'] = pd.to_datetime(df['Date'], utc=True)
 df = df.sort_values(by=['BuildingId', 'Date']).reset_index(drop=True)
 
 df['Month'] = df['Date'].dt.month
@@ -85,7 +85,7 @@ forecasts_df = pd.DataFrame({
     'ConsumptionDay1': preds_day1.clip(min=0).round(2),
     'ConsumptionDay2': preds_day2.clip(min=0).round(2),
     'ConsumptionDay3': preds_day3.clip(min=0).round(2),
-    'CreatedAt': pd.Timestamp.now().replace(microsecond=0)
+    'CreatedAt': pd.Timestamp.now(tz='UTC').replace(microsecond=0)
 })
 
 print("Перші 5 рядків прогнозу:")

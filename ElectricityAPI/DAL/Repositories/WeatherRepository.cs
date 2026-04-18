@@ -19,9 +19,11 @@ namespace DAL.Repositories
 
         public Task<List<WeatherRecord>> GetFromDateAsync(DateTime startDate)
         {
+            DateTime startDateUtc = NormalizeToUtc(startDate);
+
             return _context.WeatherRecords
                 .AsNoTracking()
-                .Where(w => w.Date.Date >= startDate.Date)
+                .Where(w => w.Date.Date >= startDateUtc.Date)
                 .Select(w => new WeatherRecord
                 {
                     Id = w.Id,
@@ -37,8 +39,10 @@ namespace DAL.Repositories
 
         public async Task<Dictionary<DateTime, WeatherRecord>> GetByStartDateAsync(DateTime startDate)
         {
+            DateTime startDateUtc = NormalizeToUtc(startDate);
+
             List<WeatherRecord> records = await _context.WeatherRecords
-                .Where(w => w.Date.Date >= startDate.Date)
+                .Where(w => w.Date.Date >= startDateUtc.Date)
                 .ToListAsync();
 
             return records
@@ -58,9 +62,21 @@ namespace DAL.Repositories
 
         public Task<int> DeleteOlderThanAsync(DateTime thresholdDate)
         {
+            DateTime thresholdDateUtc = NormalizeToUtc(thresholdDate);
+
             return _context.WeatherRecords
-                .Where(w => w.Date < thresholdDate)
+                .Where(w => w.Date < thresholdDateUtc)
                 .ExecuteDeleteAsync();
+        }
+
+        private static DateTime NormalizeToUtc(DateTime value)
+        {
+            return value.Kind switch
+            {
+                DateTimeKind.Utc => value,
+                DateTimeKind.Local => value.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+            };
         }
     }
 }

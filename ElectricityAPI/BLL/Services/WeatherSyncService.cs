@@ -44,7 +44,11 @@ namespace BLL.Services
             if (weatherData?.Daily == null) return;
 
             List<DateTime> parsedDates = weatherData.Daily.Time
-                .Select(d => DateTime.ParseExact(d, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+                .Select(d => DateTime.ParseExact(
+                    d,
+                    "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal))
                 .ToList();
 
             DateTime minDate = parsedDates.Min();

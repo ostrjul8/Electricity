@@ -1,0 +1,125 @@
+<section class="profile-page">
+    <header class="profile-page__header">
+        <div class="profile-page__titles">
+            <h1 class="profile-page__title">Профіль користувача</h1>
+            <p class="profile-page__subtitle">Керуй особистими даними та обраними будівлями.</p>
+        </div>
+    </header>
+
+    @if (errorMessage(); as error) {
+        <p class="profile-page__error">{{ error }}</p>
+    }
+
+    @if (loading()) {
+        <div class="profile-page__state">Завантаження профілю...</div>
+    } @else if (user(); as currentUser) {
+        <section class="profile-card">
+            <div class="profile-card__header">
+                <h2 class="profile-card__title">Основна інформація</h2>
+
+                @if (!editMode()) {
+                    <ui-button (buttonClick)="startEdit()" size="small" icon="fa-solid fa-pen"></ui-button>
+                }
+            </div>
+
+            @if (editMode()) {
+                <div class="profile-form">
+                    <label class="profile-form__field">
+                        <span>Ім'я</span>
+                        <input type="text" [value]="formName()" (input)="handleNameInput($event)" />
+                    </label>
+
+                    <label class="profile-form__field">
+                        <span>Прізвище</span>
+                        <input type="text" [value]="formSurname()" (input)="handleSurnameInput($event)" />
+                    </label>
+
+                    <label class="profile-form__field">
+                        <span>Телефон</span>
+                        <input type="text" [value]="formPhone()" (input)="handlePhoneInput($event)" />
+                    </label>
+
+                    <label class="profile-form__field">
+                        <span>Email</span>
+                        <input type="email" [value]="formEmail()" (input)="handleEmailInput($event)" />
+                    </label>
+                </div>
+
+                <div class="profile-form__actions">
+                    <ui-button
+                        (buttonClick)="saveProfile()"
+                        [isDisabled]="saving()"
+                        [loading]="saving()"
+                        label="Зберегти"
+                    ></ui-button>
+
+                    <ui-button
+                        (buttonClick)="cancelEdit()"
+                        [isDisabled]="saving()"
+                        type="outline"
+                        label="Скасувати"
+                    ></ui-button>
+                </div>
+            } @else {
+                <dl class="profile-info">
+                    <div>
+                        <dt>ID</dt>
+                        <dd>{{ currentUser.id }}</dd>
+                    </div>
+                    <div>
+                        <dt>Ім'я</dt>
+                        <dd>{{ currentUser.name }}</dd>
+                    </div>
+                    <div>
+                        <dt>Прізвище</dt>
+                        <dd>{{ currentUser.surname }}</dd>
+                    </div>
+                    <div>
+                        <dt>Телефон</dt>
+                        <dd>{{ currentUser.phone }}</dd>
+                    </div>
+                    <div>
+                        <dt>Email</dt>
+                        <dd>{{ currentUser.email || "—" }}</dd>
+                    </div>
+                </dl>
+            }
+        </section>
+    }
+
+    <section class="profile-card">
+        <div class="profile-card__header">
+            <h2 class="profile-card__title">Обрані будівлі</h2>
+            <span class="profile-card__counter">{{ favorites().length }}</span>
+        </div>
+
+        @if (favoritesLoading()) {
+            <div class="profile-page__state">Завантаження обраних...</div>
+        } @else if (favorites().length === 0) {
+            <div class="profile-page__state">Наразі немає обраних будівель.</div>
+        } @else {
+            <div class="favorites-grid">
+                @for (building of favorites(); track building.id) {
+                    <article class="favorite-card" role="button" tabindex="0" (click)="openDetails(building.id)">
+                        <div class="favorite-card__title">
+                            <p class="favorite-card__type">{{ building.type }}</p>
+                            <h2 class="favorite-card__address">{{ building.address }}</h2>
+                        </div>
+
+                        <span class="favorite-card__name">{{ building.name }}</span>
+
+                        <span class="favorite-card__district">{{ building.districtName }}</span>
+                        <ui-button
+                            class="favorite-card__action"
+                            (buttonClick)="removeFavorite(building.id)"
+                            type="empty"
+                            icon="fa-solid fa-heart"
+                        ></ui-button>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <app-building-details-popup></app-building-details-popup>
+</section>

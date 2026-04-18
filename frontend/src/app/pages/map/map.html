@@ -1,0 +1,73 @@
+<section class="map-page">
+    <header class="map-page__header">
+        <div class="map-page__titles">
+            <h1 class="map-page__title">Карта енергоспоживання</h1>
+            <p class="map-page__subtitle">
+                Точки завантажуються з бекенду, перетворюються у маркери і групуються в кластери при віддаленні.
+            </p>
+        </div>
+
+        <div class="map-page__search-block">
+            <ui-input
+                [(value)]="searchAddress"
+                placeholder="Введіть адресу"
+                label="Адреса для пошуку"
+                hint="Введіть щонайменше 2 символи"
+                (valueChange)="handleSearchInput($event)"
+                (keydown.enter)="handleSearchEnter()"
+                (inputFocus)="handleSearchFocus()"
+                (inputBlur)="handleSearchBlur()"
+            ></ui-input>
+
+            @if (showSearchSuggestions() && (loadingSearchSuggestions() || searchSuggestions().length > 0)) {
+                <ul class="map-page__suggestions" role="listbox" aria-label="Підказки пошуку адреси">
+                    @if (loadingSearchSuggestions()) {
+                        <li class="map-page__suggestion-item map-page__suggestion-item--state">Завантаження...</li>
+                    } @else {
+                        @for (building of searchSuggestions(); track building.id) {
+                            <li>
+                                <button
+                                    type="button"
+                                    class="map-page__suggestion-item"
+                                    (click)="selectSuggestion(building)"
+                                >
+                                    <span class="map-page__suggestion-title">{{ building.name }}</span>
+                                    <span class="map-page__suggestion-address">{{ building.address }}</span>
+                                </button>
+                            </li>
+                        }
+                    }
+                </ul>
+            }
+        </div>
+    </header>
+
+    @if (errorMessage(); as error) {
+        <p class="map-page__error">{{ error }}</p>
+    }
+
+    <div class="map-page__map-wrapper">
+        <div #mapContainer class="map-page__map" aria-label="Карта з точками будинків"></div>
+
+        <section class="map-page__legend" aria-label="Легенда кольорів">
+            <h2 class="map-page__legend-title">Легенда</h2>
+
+            <ul class="map-page__legend-list">
+                @for (item of legendItems; track item.level) {
+                    <li class="map-page__legend-item">
+                        <span class="map-page__legend-dot" [style.background]="item.color" aria-hidden="true"></span>
+                        <span>{{ item.name }}</span>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        @if (isLoading()) {
+            <div class="map-page__loading-overlay">
+                <span class="map-page__loading-text">Завантаження точок...</span>
+            </div>
+        }
+    </div>
+
+    <app-building-details-popup></app-building-details-popup>
+</section>

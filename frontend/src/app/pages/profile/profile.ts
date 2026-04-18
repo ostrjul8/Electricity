@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject, OnInit, Signal, signal, viewChild } from "@angular/core";
+import { Router } from "@angular/router";
 import { BuildingDetailsPopup } from "@shared/components/building-details-popup/building-details-popup";
 import { Button } from "@shared/components/button/button";
 import { AuthService } from "@shared/services/auth.service";
@@ -18,91 +19,18 @@ export class Profile implements OnInit {
     protected readonly favorites = signal<BuildingType[]>([]);
     protected readonly loading = signal<boolean>(true);
     protected readonly favoritesLoading = signal<boolean>(true);
-    protected readonly saving = signal<boolean>(false);
-    protected readonly editMode = signal<boolean>(false);
+    protected readonly loggingOut = signal<boolean>(false);
     protected readonly errorMessage = signal<string | null>(null);
-
-    protected readonly formName = signal<string>("");
-    protected readonly formSurname = signal<string>("");
-    protected readonly formPhone = signal<string>("");
-    protected readonly formEmail = signal<string>("");
     
     private readonly buildingDetailsPopup: Signal<BuildingDetailsPopup> = viewChild.required(BuildingDetailsPopup);
 
     private readonly authService: AuthService = inject(AuthService);
     private readonly userService: UserService = inject(UserService);
+    private readonly router: Router = inject(Router);
 
     public ngOnInit(): void {
         this.loadProfile();
         this.loadFavorites();
-    }
-
-    protected startEdit(): void {
-        const currentUser: UserType | null = this.user();
-
-        if (!currentUser) {
-            return;
-        }
-
-        this.formName.set(currentUser.name);
-        this.formSurname.set(currentUser.surname);
-        this.formPhone.set(currentUser.phone);
-        this.formEmail.set(currentUser.email ?? "");
-
-        this.errorMessage.set(null);
-        this.editMode.set(true);
-    }
-
-    protected cancelEdit(): void {
-        this.editMode.set(false);
-        this.errorMessage.set(null);
-    }
-
-    protected handleNameInput(event: Event): void {
-        this.formName.set((event.target as HTMLInputElement).value);
-    }
-
-    protected handleSurnameInput(event: Event): void {
-        this.formSurname.set((event.target as HTMLInputElement).value);
-    }
-
-    protected handlePhoneInput(event: Event): void {
-        this.formPhone.set((event.target as HTMLInputElement).value);
-    }
-
-    protected handleEmailInput(event: Event): void {
-        this.formEmail.set((event.target as HTMLInputElement).value);
-    }
-
-    protected async saveProfile(): Promise<void> {
-        const name: string = this.formName().trim();
-        const surname: string = this.formSurname().trim();
-        const phone: string = this.formPhone().trim();
-        const email: string = this.formEmail().trim();
-
-        if (!name || !surname || !phone) {
-            this.errorMessage.set("Ім'я, прізвище та телефон є обов'язковими.");
-            return;
-        }
-
-        this.saving.set(true);
-        this.errorMessage.set(null);
-
-        try {
-            const updatedUser: UserType = await this.authService.updateProfile({
-                name,
-                surname,
-                phone,
-                email,
-            });
-
-            this.user.set(updatedUser);
-            this.editMode.set(false);
-        } catch (error) {
-            this.errorMessage.set(this.getReadableError(error, "Не вдалося оновити профіль."));
-        } finally {
-            this.saving.set(false);
-        }
     }
 
     protected async removeFavorite(buildingId: number): Promise<void> {
@@ -111,6 +39,20 @@ export class Profile implements OnInit {
             this.favorites.update((items: BuildingType[]) => items.filter((item: BuildingType) => item.id !== buildingId));
         } catch (error) {
             this.errorMessage.set(this.getReadableError(error, "Не вдалося видалити будівлю з обраних."));
+        }
+    }
+
+    protected async logout(): Promise<void> {
+        this.loggingOut.set(true);
+        this.errorMessage.set(null);
+
+        try {
+            await this.authService.logout();
+            await this.router.navigate(["/auth/login"]);
+        } catch (error) {
+            this.errorMessage.set(this.getReadableError(error, "Не вдалося вийти з акаунта."));
+        } finally {
+            this.loggingOut.set(false);
         }
     }
 

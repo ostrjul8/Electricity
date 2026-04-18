@@ -162,16 +162,16 @@
 
 .favorites-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	grid-template-columns: 1;
     gap: 12px;
 }
-
 
 .favorite-card {
 	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 24px;
+    height: 70px;
 	padding: 16px;
 	border-radius: 18px;
 	border: 1px solid var(--secondary-color);
@@ -185,24 +185,28 @@
 }
 
 .favorite-card__address {
+    width: 250px;
 	margin: 0;
 	font-size: 18px;
 }
 
 .favorite-card__name,
 .favorite-card__district {
+    width: 170px;
+    max-height: 60px;
+    overflow: auto;
 	margin: 0;
 	color: var(--secondary-color);
 	font-size: 14px;
 }
 
-.favorite-card__favorite {
+.favorite-card__action {
 	position: absolute;
 	top: 14px;
 	right: 14px;
 }
 
-:host ::ng-deep .favorite-card__favorite .button {
+:host ::ng-deep .favorite-card__action .button {
 	--button-color: var(--main-color);
 }
 

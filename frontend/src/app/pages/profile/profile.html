@@ -2,8 +2,16 @@
     <header class="profile-page__header">
         <div class="profile-page__titles">
             <h1 class="profile-page__title">Профіль користувача</h1>
-            <p class="profile-page__subtitle">Керуй особистими даними та обраними будівлями.</p>
         </div>
+
+        <ui-button
+            (buttonClick)="logout()"
+            [loading]="loggingOut()"
+            [isDisabled]="loading() || loggingOut()"
+            theme="danger"
+            label="Вийти"
+            icon="fa-solid fa-right-from-bracket"
+        ></ui-button>
     </header>
 
     @if (errorMessage(); as error) {
@@ -16,74 +24,22 @@
         <section class="profile-card">
             <div class="profile-card__header">
                 <h2 class="profile-card__title">Основна інформація</h2>
-
-                @if (!editMode()) {
-                    <ui-button (buttonClick)="startEdit()" size="small" icon="fa-solid fa-pen"></ui-button>
-                }
             </div>
 
-            @if (editMode()) {
-                <div class="profile-form">
-                    <label class="profile-form__field">
-                        <span>Ім'я</span>
-                        <input type="text" [value]="formName()" (input)="handleNameInput($event)" />
-                    </label>
-
-                    <label class="profile-form__field">
-                        <span>Прізвище</span>
-                        <input type="text" [value]="formSurname()" (input)="handleSurnameInput($event)" />
-                    </label>
-
-                    <label class="profile-form__field">
-                        <span>Телефон</span>
-                        <input type="text" [value]="formPhone()" (input)="handlePhoneInput($event)" />
-                    </label>
-
-                    <label class="profile-form__field">
-                        <span>Email</span>
-                        <input type="email" [value]="formEmail()" (input)="handleEmailInput($event)" />
-                    </label>
+            <dl class="profile-info">
+                <div>
+                    <dt>ID</dt>
+                    <dd>{{ currentUser.id }}</dd>
                 </div>
-
-                <div class="profile-form__actions">
-                    <ui-button
-                        (buttonClick)="saveProfile()"
-                        [isDisabled]="saving()"
-                        [loading]="saving()"
-                        label="Зберегти"
-                    ></ui-button>
-
-                    <ui-button
-                        (buttonClick)="cancelEdit()"
-                        [isDisabled]="saving()"
-                        type="outline"
-                        label="Скасувати"
-                    ></ui-button>
+                <div>
+                    <dt>Нікнейм</dt>
+                    <dd>{{ currentUser.name }}</dd>
                 </div>
-            } @else {
-                <dl class="profile-info">
-                    <div>
-                        <dt>ID</dt>
-                        <dd>{{ currentUser.id }}</dd>
-                    </div>
-                    <div>
-                        <dt>Ім'я</dt>
-                        <dd>{{ currentUser.name }}</dd>
-                    </div>
-                    <div>
-                        <dt>Прізвище</dt>
-                        <dd>{{ currentUser.surname }}</dd>
-                    </div>
-                    <div>
-                        <dt>Телефон</dt>
-                        <dd>{{ currentUser.phone }}</dd>
-                    </div>
-                    <div>
-                        <dt>Email</dt>
-                        <dd>{{ currentUser.email || "—" }}</dd>
-                    </div>
-                </dl>
-            }
+                <div>
+                    <dt>Email</dt>
+                    <dd>{{ currentUser.email || "—" }}</dd>
+                </div>
+            </dl>
         </section>
     }
 

@@ -1,10 +1,12 @@
 ﻿using BLL.Models;
 using Core.Entities;
 using DAL;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
+using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -12,6 +14,38 @@ namespace ElectricityAPI.Data
 {
     public static class DatabaseSeeder
     {
+        public static async Task SeedUsersAsync(AppDbContext context)
+        {
+            const string defaultUserEmail = "user@electricity.local";
+            const string defaultAdminEmail = "admin@electricity.local";
+
+            if (!await context.Users.AnyAsync(u => u.Email == defaultUserEmail))
+            {
+                context.Users.Add(new User
+                {
+                    Username = "user",
+                    Email = defaultUserEmail,
+                    PasswordHash = HashPassword("User123!"),
+                    IsAdmin = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            if (!await context.Users.AnyAsync(u => u.Email == defaultAdminEmail))
+            {
+                context.Users.Add(new User
+                {
+                    Username = "admin",
+                    Email = defaultAdminEmail,
+                    PasswordHash = HashPassword("Admin123!"),
+                    IsAdmin = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await context.SaveChangesAsync();
+        }
+
         public static async Task SeedBuildingsAsync(AppDbContext context)
         {
             if (context.Buildings.Any()) return;
@@ -213,6 +247,15 @@ namespace ElectricityAPI.Data
             double variance = 1.0 + ((rnd.NextDouble() * 0.2) - 0.1);
 
             return Math.Round(finalConsumption * variance, 2);
+        }
+
+        private static string HashPassword(string password)
+        {
+            const int iterations = 100_000;
+            byte[] salt = RandomNumberGenerator.GetBytes(16);
+            byte[] hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, 32);
+
+            return $"{iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
         }
     }
 }

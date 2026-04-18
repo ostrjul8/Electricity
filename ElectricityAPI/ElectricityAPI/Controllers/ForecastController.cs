@@ -1,4 +1,5 @@
 using BLL.Services;
+using Core.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,7 +7,7 @@ namespace ElectricityAPI.Controllers
 {
     [ApiController]
     [Route("api/forecast")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public class ForecastController : ControllerBase
     {
         private readonly ForecastScriptService _forecastScriptService;

@@ -4,4 +4,5 @@ export type UserType = {
     surname: string;
     phone: string;
     email?: string;
+    role: string;
 };

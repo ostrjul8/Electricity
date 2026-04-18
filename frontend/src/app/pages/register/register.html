@@ -1,0 +1,40 @@
+<section class="auth-form">
+    <h2 class="auth-form__title">Реєстрація</h2>
+
+    @if (errorMessage(); as error) {
+        <p class="auth-form__error">{{ error }}</p>
+    }
+
+    <label class="auth-form__field">
+        <span>Ім'я користувача</span>
+        <input type="text" [value]="username()" (input)="handleUsernameInput($event)" placeholder="your_username" />
+    </label>
+
+    <label class="auth-form__field">
+        <span>Email</span>
+        <input type="email" [value]="email()" (input)="handleEmailInput($event)" placeholder="name@example.com" />
+    </label>
+
+    <label class="auth-form__field">
+        <span>Пароль</span>
+        <input type="password" [value]="password()" (input)="handlePasswordInput($event)" placeholder="••••••••" />
+    </label>
+
+    <label class="auth-form__field">
+        <span>Підтвердження пароля</span>
+        <input type="password" [value]="repeatPassword()" (input)="handleRepeatPasswordInput($event)" placeholder="••••••••" />
+    </label>
+
+    <ui-button
+        [isFullWidth]="true"
+        [loading]="loading()"
+        [isDisabled]="loading()"
+        label="Зареєструватися"
+        (buttonClick)="submit()"
+    ></ui-button>
+
+    <p class="auth-form__link-row">
+        Вже є акаунт?
+        <a routerLink="/auth/login">Увійти</a>
+    </p>
+</section>

@@ -1,5 +1,6 @@
 using BLL.Models;
 using BLL.Services;
+using Core.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -8,7 +9,7 @@ namespace ElectricityAPI.Controllers
 {
     [ApiController]
     [Route("api/favorites")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = AppRoles.AuthorizedUserAndAbove)]
     public class FavoritesController : ControllerBase
     {
         private readonly FavoriteService _favoriteService;

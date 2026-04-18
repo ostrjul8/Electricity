@@ -50,7 +50,7 @@ namespace BLL.Services
                 Email = email,
                 PasswordHash = HashPassword(request.Password),
                 IsAdmin = false,
-                CreatedAt = KyivTimeHelper.Now
+                CreatedAt = DateTime.UtcNow
             };
 
             await _userRepository.AddAsync(user);
@@ -101,15 +101,15 @@ namespace BLL.Services
                 throw new UnauthorizedAccessException("Invalid refresh token.");
             }
 
-            DateTime kyivNow = KyivTimeHelper.Now;
+            DateTime utcNow = DateTime.UtcNow;
 
-            if (storedToken.ExpiresAt <= kyivNow)
+            if (storedToken.ExpiresAt <= utcNow)
             {
-                await _refreshTokenRepository.TryRevokeAsync(storedToken.Id, kyivNow);
+                await _refreshTokenRepository.TryRevokeAsync(storedToken.Id, utcNow);
                 throw new UnauthorizedAccessException("Refresh token expired.");
             }
 
-            int affectedRows = await _refreshTokenRepository.TryRevokeAsync(storedToken.Id, kyivNow);
+            int affectedRows = await _refreshTokenRepository.TryRevokeAsync(storedToken.Id, utcNow);
             if (affectedRows == 0)
             {
                 throw new UnauthorizedAccessException("Invalid refresh token.");
@@ -126,8 +126,27 @@ namespace BLL.Services
             {
                 Id = u.Id,
                 Username = u.Username,
-                Email = u.Email
+                Email = u.Email,
+                Role = u.IsAdmin ? AppRoles.Admin : AppRoles.AuthorizedUser
             }).ToList();
+        }
+
+        public async Task<UserDTO> GetCurrentUserAsync(int userId)
+        {
+            User? user = await _userRepository.GetByIdAsync(userId);
+
+            if (user is null)
+            {
+                throw new KeyNotFoundException("User not found.");
+            }
+
+            return new UserDTO
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Role = user.IsAdmin ? AppRoles.Admin : AppRoles.AuthorizedUser
+            };
         }
 
         private async Task<AuthResponseDTO> CreateAndPersistTokensAsync(User user)
@@ -157,8 +176,8 @@ namespace BLL.Services
             {
                 TokenHash = refreshTokenHash,
                 UserId = user.Id,
-                CreatedAt = KyivTimeHelper.Now,
-                ExpiresAt = KyivTimeHelper.Now.AddDays(refreshExpiresDays)
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(refreshExpiresDays)
             };
 
             await _refreshTokenRepository.AddAsync(refreshTokenEntity);
@@ -169,12 +188,13 @@ namespace BLL.Services
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 ExpiresAtUtc = accessExpiresAtUtc,
-                Role = user.IsAdmin ? "Admin" : "User",
+                Role = user.IsAdmin ? AppRoles.Admin : AppRoles.AuthorizedUser,
                 User = new UserDTO
                 {
                     Id = user.Id,
                     Username = user.Username,
-                    Email = user.Email
+                    Email = user.Email,
+                    Role = user.IsAdmin ? AppRoles.Admin : AppRoles.AuthorizedUser
                 }
             };
         }
@@ -185,9 +205,16 @@ namespace BLL.Services
             {
                 new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new(JwtRegisteredClaimNames.Email, user.Email),
-                new(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
+                new(JwtRegisteredClaimNames.UniqueName, user.Username)
             };
+
+            claims.Add(new Claim(ClaimTypes.Role, AppRoles.User));
+            claims.Add(new Claim(ClaimTypes.Role, AppRoles.AuthorizedUser));
+
+            if (user.IsAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, AppRoles.Admin));
+            }
 
             SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

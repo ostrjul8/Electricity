@@ -1,7 +1,9 @@
 using BLL.Models;
 using BLL.Services;
+using Core.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ElectricityAPI.Controllers
 {
@@ -79,7 +81,7 @@ namespace ElectricityAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpGet("users")]
         public async Task<IActionResult> GetUsers()
         {
@@ -87,6 +89,32 @@ namespace ElectricityAPI.Controllers
             {
                 List<UserDTO> users = await _authService.GetUsersAsync();
                 return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMe()
+        {
+            try
+            {
+                string? userIdClaim = User.FindFirst("sub")?.Value
+                    ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { error = "Invalid user token." });
+                }
+
+                UserDTO user = await _authService.GetCurrentUserAsync(userId);
+                return Ok(user);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
             }
             catch (Exception ex)
             {

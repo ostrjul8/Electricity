@@ -2,7 +2,33 @@ import { HttpClient } from "@angular/common/http";
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { environment } from "@shared/environments/environment";
 import { UserType } from "@shared/types/UserType";
-import { firstValueFrom, Observable, switchMap } from "rxjs";
+import { firstValueFrom, Observable, tap, throwError } from "rxjs";
+
+type BackendUserDto = {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+};
+
+type AuthResponse = {
+    accessToken: string;
+    refreshToken: string;
+    expiresAtUtc: string;
+    role: string;
+    user: BackendUserDto;
+};
+
+type RegisterCredentials = {
+    username: string;
+    email: string;
+    password: string;
+};
+
+type LoginCredentials = {
+    email: string;
+    password: string;
+};
 
 @Injectable({
     providedIn: "root",
@@ -15,75 +41,68 @@ export class AuthService {
 
     private readonly httpClient: HttpClient = inject(HttpClient);
 
+    ngOnInit(): void {
+        this.init();
+    }
+
     public async signUp(
-        user: Omit<UserType, "id"> & { password: string },
+        credentials: RegisterCredentials,
     ): Promise<{ message: string }> {
         return await firstValueFrom(
-            this.httpClient.post<{ accessToken: string; refreshToken: string }>(
+            this.httpClient.post<AuthResponse>(
                 environment.serverURL + "/api/auth/register",
-                user,
+                credentials,
             ),
-        ).then((response: { accessToken: string; refreshToken: string }) => {
-            sessionStorage.setItem("accessToken", response.accessToken);
-            localStorage.setItem("refreshToken", response.refreshToken);
-
-            this.getAuthorizedUser();
+        ).then((response: AuthResponse) => {
+            this.applyAuthResponse(response);
 
             return { message: "User registered successfully" };
         });
     }
 
-    public async login(credentials: {
-        phone: string;
-        password: string;
-    }): Promise<{ message: string }> {
+    public async login(credentials: LoginCredentials): Promise<{ message: string }> {
         return await firstValueFrom(
-            this.httpClient.post<{ accessToken: string; refreshToken: string }>(
+            this.httpClient.post<AuthResponse>(
                 environment.serverURL + "/api/auth/login",
                 credentials,
             ),
-        ).then((response: { accessToken: string; refreshToken: string }) => {
-            sessionStorage.setItem("accessToken", response.accessToken);
-            localStorage.setItem("refreshToken", response.refreshToken);
-
-            this.getAuthorizedUser();
+        ).then((response: AuthResponse) => {
+            this.applyAuthResponse(response);
 
             return { message: "User logged in successfully" };
         });
     }
 
     public async getAuthorizedUser(): Promise<UserType> {
-        return await Promise.resolve().then(async () => {
-            const fallbackUser: UserType = {
-                id: "1",
-                name: "John",
-                surname: "Doe",
-                phone: "+1234567890",
-                email: "john.doe@example.com",
-            };
+        const currentUser: UserType | null = this.user();
+        if (currentUser) {
+            return currentUser;
+        }
 
+        const accessToken: string | null = sessionStorage.getItem("accessToken");
+        if (!accessToken) {
+            throw new Error("Користувач не авторизований.");
+        }
+
+        try {
+            const backendUser: BackendUserDto = await firstValueFrom(
+                this.httpClient.get<BackendUserDto>(environment.serverURL + "/api/auth/me"),
+            );
+
+            const mappedUser: UserType = this.mapBackendUser(backendUser);
+            this.storeProfile(mappedUser);
+            this.user.set(mappedUser);
+
+            return mappedUser;
+        } catch {
             const storedUser: UserType | null = this.readStoredProfile();
-            const user: UserType = storedUser ?? fallbackUser;
+            if (storedUser) {
+                this.user.set(storedUser);
+                return storedUser;
+            }
 
-            this.storeProfile(user);
-
-            this.user.set(user);
-            return user;
-        });
-    }
-
-    public async updateProfile(profile: Omit<UserType, "id">): Promise<UserType> {
-        const currentUser: UserType = this.user() ?? await this.getAuthorizedUser();
-
-        const updatedUser: UserType = {
-            ...currentUser,
-            ...profile,
-        };
-
-        this.storeProfile(updatedUser);
-        this.user.set(updatedUser);
-
-        return updatedUser;
+            throw new Error("Не вдалося відновити профіль користувача.");
+        }
     }
 
     public async logout(): Promise<{ message: string }> {
@@ -100,23 +119,68 @@ export class AuthService {
         const refreshToken: string | null =
             localStorage.getItem("refreshToken");
 
+        if (!refreshToken) {
+            return throwError(() => new Error("Refresh token missing."));
+        }
+
         const refreshObservable: Observable<{ accessToken: string }> =
-            this.httpClient.post<{ accessToken: string }>(
+            this.httpClient.post<AuthResponse>(
                 environment.serverURL + "/api/auth/refresh",
                 { refreshToken },
+            ).pipe(
+                tap((response: AuthResponse) => {
+                    this.applyAuthResponse(response);
+                }),
             );
-
-        refreshObservable.subscribe((response: { accessToken: string }) => {
-            sessionStorage.setItem("accessToken", response.accessToken);
-        });
 
         return refreshObservable;
     }
 
     public async init(): Promise<void> {
+        const token: string | null = sessionStorage.getItem("accessToken");
+        const refreshToken: string | null = localStorage.getItem("refreshToken");
+
+        if (!token && !refreshToken) {
+            this.user.set(null);
+            return;
+        }
+
+        if (!token && refreshToken) {
+            try {
+                await firstValueFrom(this.refreshToken());
+            } catch {
+                await this.logout();
+                return;
+            }
+        }
+
         await this.getAuthorizedUser().catch(() => {
             this.user.set(null);
         });
+    }
+
+    public isLoggedIn(): boolean {
+        return Boolean(sessionStorage.getItem("accessToken"));
+    }
+
+    private applyAuthResponse(response: AuthResponse): void {
+        sessionStorage.setItem("accessToken", response.accessToken);
+        localStorage.setItem("refreshToken", response.refreshToken);
+
+        const mappedUser: UserType = this.mapBackendUser(response.user);
+        this.storeProfile(mappedUser);
+        this.user.set(mappedUser);
+    }
+
+    private mapBackendUser(user: BackendUserDto): UserType {
+        return {
+            id: String(user.id),
+            name: user.username,
+            surname: "",
+            phone: "",
+            email: user.email,
+            role: user.role,
+        };
     }
 
     private storeProfile(profile: UserType): void {
@@ -154,6 +218,7 @@ export class AuthService {
                 surname: candidate.surname,
                 phone: candidate.phone,
                 email: typeof candidate.email === "string" ? candidate.email : "",
+                role: typeof candidate.role === "string" ? candidate.role : "",
             };
         } catch {
             return null;

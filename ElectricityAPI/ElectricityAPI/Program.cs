@@ -61,6 +61,16 @@ namespace ElectricityAPI
 
             builder.Services.AddAuthorization();
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("FrontendPolicy", policy =>
+                {
+                    policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
+
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
@@ -98,6 +108,7 @@ namespace ElectricityAPI
                 IServiceProvider services = scope.ServiceProvider;
                 AppDbContext context = services.GetRequiredService<AppDbContext>();
 
+                await ElectricityAPI.Data.DatabaseSeeder.SeedUsersAsync(context);
                 await ElectricityAPI.Data.DatabaseSeeder.SeedBuildingsAsync(context);
             }
 
@@ -108,6 +119,7 @@ namespace ElectricityAPI
             }
 
             app.UseHttpsRedirection();
+            app.UseCors("FrontendPolicy");
 
             app.UseAuthentication();
             app.UseAuthorization();

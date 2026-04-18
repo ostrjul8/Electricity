@@ -1,0 +1,220 @@
+.chats-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 100dvh;
+    padding: 20px;
+}
+
+.chats-page__header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.chats-page__title {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.15;
+    color: var(--main-font-color);
+}
+
+.chats-page__subtitle {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--secondary-color);
+}
+
+.chats-page__error {
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgb(185 28 28 / 30%);
+    background-color: rgb(254 226 226 / 75%);
+    color: #991b1b;
+}
+
+.chats-shell {
+    display: grid;
+    grid-template-columns: 290px minmax(0, 1fr);
+    gap: 14px;
+    min-height: 0;
+    flex: 1;
+}
+
+.chats-shell__sidebar {
+    min-height: 0;
+}
+
+.chats-shell__sidebar,
+.chat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--secondary-color);
+    border-radius: 18px;
+}
+
+.chats-shell__panel-header,
+.chat-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.chats-shell__panel-title,
+.chat-card__title {
+    margin: 0;
+    font-size: 18px;
+}
+
+.chats-shell__counter {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--main-soft-color);
+    color: var(--main-color);
+    font-size: 12px;
+}
+
+.chats-shell__list,
+.messages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.chats-shell__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 12px;
+    border: 1px solid var(--main-soft-border-color);
+    border-radius: 14px;
+    background: var(--white-color);
+    color: var(--main-font-color);
+    cursor: pointer;
+    text-align: left;
+}
+
+.chats-shell__item span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.chats-shell__item small {
+    color: var(--secondary-color);
+}
+
+.chats-shell__item--active {
+    border-color: var(--main-color);
+    background: var(--main-soft-color);
+}
+
+.chats-shell__unread {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2563eb;
+    flex-shrink: 0;
+}
+
+.chat-card {
+    min-height: 0;
+    flex: 1;
+}
+
+.chat-card--messages {
+    flex: 1;
+}
+
+.chat-card__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    border-radius: 14px;
+    flex: 1;
+}
+
+.chat-card__textarea {
+    --textarea-width: 100%;
+    --textarea-height: 60px;
+}
+
+.chat-card__textarea:focus {
+    border-color: var(--main-color);
+    box-shadow: 0 0 0 2px var(--outline-color);
+}
+
+.chat-card__actions,
+.chat-card__composer {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.chat-card__button {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 14px;
+    background: var(--main-color);
+    color: var(--white-color);
+    cursor: pointer;
+}
+
+.chat-card__button:disabled {
+    background: var(--disabled-color);
+    color: var(--main-font-disabled-color);
+    cursor: not-allowed;
+}
+
+.messages-wrapper {
+    flex: 1;
+}
+
+.message-bubble {
+    max-width: 70%;
+    align-self: flex-start;
+    padding: 12px;
+    border-radius: 16px 16px 16px 6px;
+    background: var(--main-soft-color);
+}
+
+.message-bubble--outgoing {
+    align-self: flex-end;
+    border-radius: 16px 16px 6px 16px;
+    background: rgb(37 99 235 / 10%);
+}
+
+.message-bubble__text {
+    margin: 0 0 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--main-font-color);
+}
+
+.message-bubble__time {
+    font-size: 11px;
+    color: var(--secondary-color);
+}
+
+@media (max-width: 900px) {
+    .chats-page {
+        padding: 14px;
+    }
+
+    .chats-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .chats-shell__sidebar {
+        order: 2;
+    }
+}

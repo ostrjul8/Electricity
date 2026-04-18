@@ -1,0 +1,106 @@
+<section class="chats-page">
+    <header class="chats-page__header">
+        <h1 class="chats-page__title">Чати</h1>
+        <p class="chats-page__subtitle">Створюй нові звернення, переглядай історію та відповідай у поточному чаті.</p>
+    </header>
+
+    @if (errorMessage(); as error) {
+        <p class="chats-page__error">{{ error }}</p>
+    }
+
+    <section class="chats-shell">
+        <aside class="chats-shell__sidebar">
+            <div class="chats-shell__panel-header">
+                <h2 class="chats-shell__panel-title">Список чатів</h2>
+                <span class="chats-shell__counter">{{ chats().length }}</span>
+            </div>
+
+            <ui-button
+                (buttonClick)="startNewChat()"
+                [isFullWidth]="true"
+                size="small"
+                icon="fa-solid fa-plus"
+                label="Новий чат"
+            ></ui-button>
+
+            @if (loadingChats()) {
+                <div class="chats-shell__state">Завантаження чатів...</div>
+            } @else if (chats().length === 0) {
+                <div class="chats-shell__state">Немає чатів.</div>
+            } @else {
+                <div class="chats-shell__list">
+                    @for (chat of chats(); track chat.id) {
+                        <button
+                            type="button"
+                            class="chats-shell__item"
+                            [class.chats-shell__item--active]="chat.id === activeChatId()"
+                            (click)="selectChat(chat.id)"
+                        >
+                            <span>
+                                <strong>Чат #{{ chat.id }}</strong>
+                                <small>{{ chat.userId }}</small>
+                            </span>
+
+                            @if (!chat.isRead) {
+                                <span class="chats-shell__unread"></span>
+                            }
+                        </button>
+                    }
+                </div>
+            }
+        </aside>
+
+        <section class="chat-card chat-card--messages">
+            <div class="chat-card__header">
+                @if (isCreatingNewChat()) {
+                    <h2 class="chat-card__title">Новий чат</h2>
+                } @else {
+                    <h2 class="chat-card__title">
+                        {{ activeChat() ? "Чат #" + activeChatId() : "Виберіть чат" }}
+                    </h2>
+                }
+            </div>
+
+            <div class="messages-wrapper">
+                @if (isCreatingNewChat()) {
+                    <div class="chat-card__empty">Починайте розмову...</div>
+                } @else {
+                    @if (loadingMessages()) {
+                        <div class="chats-shell__state">Завантаження повідомлень...</div>
+                    } @else if (messages().length === 0) {
+                        <div class="chats-shell__state">Оберіть чат.</div>
+                    } @else {
+                        <div class="messages-list">
+                            @for (message of messages(); track message.id) {
+                                <article class="message-bubble" [class.message-bubble--outgoing]="!message.isAdmin">
+                                    <p class="message-bubble__text">{{ message.text }}</p>
+                                    <time class="message-bubble__time">{{ message.sentAt | date: "dd.MM HH:mm" }}</time>
+                                </article>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="chat-card__composer">
+                <ui-textarea
+                    class="chat-card__textarea"
+                    [value]="replyText()"
+                    [isDisabled]="!isCreatingNewChat() && activeChatId() === null"
+                    [isFullWidth]="true"
+                    placeholder="Напишіть повідомлення..."
+                    (input)="handleReplyInput($event)"
+                ></ui-textarea>
+
+                <ui-button
+                    (buttonClick)="sendReply()"
+                    [isDisabled]="
+                        sending() || replyText().trim() === '' || (!isCreatingNewChat() && activeChatId() === null)
+                    "
+                    [loading]="sending()"
+                    icon="fa-solid fa-paper-plane"
+                ></ui-button>
+            </div>
+        </section>
+    </section>
+</section>

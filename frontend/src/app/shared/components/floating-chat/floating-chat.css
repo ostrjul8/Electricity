@@ -1,0 +1,123 @@
+:host {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: var(--z-index-3);
+}
+
+.floating-chat {
+    position: absolute;
+    right: 30px;
+    bottom: 70px;
+    display: flex;
+    flex-direction: column;
+    width: min(92vw, 390px);
+    height: min(72vh, 560px);
+    overflow: hidden;
+    border: 1px solid var(--secondary-color);
+    border-radius: 22px;
+    background: var(--main-background-color);
+    box-shadow: 0 0 20px 20px var(--shadow-color-10);
+}
+
+:host ::ng-deep .floating-chat__fab .button {
+    --button-width: 56px !important;
+    --button-height: 56px !important;
+    --button-font-size: 24px;
+    --button-border-radius: 50%;
+}
+
+.floating-chat__header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 50px;
+    border-bottom: 1px solid var(--secondary-color);
+}
+
+.floating-chat__close {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.floating-chat__title {
+    margin: 0;
+    font-size: 16px;
+    color: var(--main-font-color);
+}
+
+.floating-chat__body {
+    height: 100%;
+    padding: 20px;
+}
+
+.floating-chat__messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.floating-chat__message {
+    max-width: 84%;
+    align-self: flex-start;
+    padding: 10px 11px;
+    border-radius: 16px 16px 16px 6px;
+    background: var(--main-soft-color);
+}
+
+.floating-chat__message--outgoing {
+    align-self: flex-end;
+    border-radius: 16px 16px 6px 16px;
+    background: rgb(37 99 235 / 10%);
+}
+
+.floating-chat__message-text {
+    margin: 0 0 4px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--main-font-color);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.floating-chat__message-time {
+    font-size: 11px;
+    color: var(--secondary-color);
+}
+
+.floating-chat__empty,
+.floating-chat__error {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+}
+
+.floating-chat__error {
+    margin: 0;
+    color: var(--error-font-color);
+    background: var(--error-background-color);
+}
+
+.floating-chat__composer {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 20px;
+}
+
+:host ::ng-deep .floating-chat__input .textarea {
+    --textarea-height: 60px;
+}
+
+@media (max-width: 600px) {
+    :host {
+        right: 14px;
+        bottom: 14px;
+    }
+}

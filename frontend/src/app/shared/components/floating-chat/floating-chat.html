@@ -1,0 +1,65 @@
+@if (isEnabled()) {
+    @if (isOpen()) {
+        <section class="floating-chat">
+            <header class="floating-chat__header">
+                <h2 class="floating-chat__title">{{ headerText() }}</h2>
+
+                <ui-button
+                    class="floating-chat__close"
+                    (buttonClick)="close()"
+                    type="empty"
+                    icon="fa-solid fa-xmark"
+                    aria-label="Закрити чат"
+                ></ui-button>
+            </header>
+
+            <div class="floating-chat__body">
+                <div class="floating-chat__messages">
+                    @if (loadingMessages()) {
+                        <div class="floating-chat__empty">Завантаження повідомлень...</div>
+                    } @else if (messages().length === 0) {
+                        <div class="floating-chat__empty">Тут поки порожньо.</div>
+                    } @else {
+                        @for (message of messages(); track message.id) {
+                            <article
+                                class="floating-chat__message"
+                                [class.floating-chat__message--outgoing]="!message.isAdmin"
+                            >
+                                <p class="floating-chat__message-text">{{ message.text }}</p>
+                                <time class="floating-chat__message-time">{{ message.sentAt | date: "HH:mm" }}</time>
+                            </article>
+                        }
+                    }
+                </div>
+
+                @if (errorMessage(); as error) {
+                    <p class="floating-chat__error">{{ error }}</p>
+                }
+            </div>
+
+            <footer class="floating-chat__composer">
+                <ui-textarea
+                    class="floating-chat__input"
+                    [value]="draft()"
+                    [isFullWidth]="true"
+                    placeholder="Напишіть повідомлення..."
+                    (input)="handleDraftInput($event)"
+                ></ui-textarea>
+
+                <ui-button
+                    (buttonClick)="send()"
+                    [isDisabled]="sending() || draft().trim() === ''"
+                    [loading]="sending()"
+                    icon="fa-solid fa-paper-plane"
+                ></ui-button>
+            </footer>
+        </section>
+    }
+
+    <ui-button
+        class="floating-chat__fab"
+        [attr.aria-expanded]="isOpen()"
+        (buttonClick)="toggle()"
+        icon="fa-regular fa-comment-dots"
+    ></ui-button>
+}

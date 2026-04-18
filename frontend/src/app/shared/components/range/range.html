@@ -1,0 +1,71 @@
+<label
+    class="range_field"
+    [class]="{
+        range_field_width_full: isFullWidth(),
+    }"
+>
+    @if (label()) {
+        <span class="range_field__label">
+            {{ label() }}
+            @if (isRequired()) {
+                <span class="range_field__required" aria-hidden="true">*</span>
+            }
+        </span>
+    }
+
+    <div
+        class="range"
+        [class]="{
+            range_theme_default: theme() === 'default',
+            range_theme_ghost: theme() === 'ghost',
+            range_size_small: size() === 'small',
+            range_size_large: size() === 'large',
+            range_state_error: !!error(),
+            range_state_disabled: isDisabled(),
+        }"
+    >
+        @if (showBoundaries() || showValue()) {
+            <div class="range__meta">
+                @if (showBoundaries()) {
+                    <span class="range__bound">{{ normalizedMin() }}</span>
+                } @else {
+                    <span class="range__bound range__bound_empty"></span>
+                }
+
+                @if (showValue()) {
+                    <span class="range__value">{{ clampedValue() }}</span>
+                }
+
+                @if (showBoundaries()) {
+                    <span class="range__bound">{{ normalizedMax() }}</span>
+                } @else {
+                    <span class="range__bound range__bound_empty"></span>
+                }
+            </div>
+        }
+
+        <input
+            class="range__control"
+            type="range"
+            [name]="name() || null"
+            [min]="normalizedMin()"
+            [max]="normalizedMax()"
+            [step]="normalizedStep()"
+            [value]="clampedValue()"
+            [disabled]="isDisabled()"
+            [required]="isRequired()"
+            [style.--range-progress]="progressPercent() + '%'"
+            [attr.aria-invalid]="error() ? 'true' : 'false'"
+            (input)="handleInput($event)"
+            (change)="handleChange($event)"
+            (focus)="handleFocus($event)"
+            (blur)="handleBlur($event)"
+        />
+    </div>
+</label>
+
+@if (error()) {
+    <p class="range_field__message range_field__message_error">{{ error() }}</p>
+} @else if (hint()) {
+    <p class="range_field__message">{{ hint() }}</p>
+}

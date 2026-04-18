@@ -1,0 +1,179 @@
+:host {
+	display: inline-block;
+	width: fit-content;
+
+	--input-width: fit-content;
+	--input-height: 36px;
+	--input-gap: 10px;
+
+	--input-padding-top: 12px;
+	--input-padding-bottom: 12px;
+	--input-padding-left: 16px;
+	--input-padding-right: 16px;
+	--input-padding: var(--input-padding-top) var(--input-padding-right) var(--input-padding-bottom)
+		var(--input-padding-left);
+
+	--input-border-radius: 16px;
+	--input-border-width: 1px;
+
+	--input-font-size: 1rem;
+	--input-font-weight: 400;
+	--input-line-height: 1.4;
+
+	--input-color: var(--secondary-font-color);
+	--input-placeholder-color: var(--main-font-disabled-color);
+	--input-icon-color: var(--main-font-disabled-color);
+
+	--input-background-color: var(--white-color);
+	--input-border-color: var(--main-soft-border-color);
+	--input-hover-border-color: var(--main-soft-border-hover-color);
+	--input-focus-border-color: var(--main-color);
+	--input-focus-shadow-color: var(--outline-color);
+
+	--input-disabled-color: var(--main-font-disabled-color);
+	--input-disabled-background-color: var(--disabled-color);
+	--input-disabled-border-color: var(--disabled-color);
+
+	--input-message-color: var(--secondary-color);
+	--input-error-color: var(--danger-color);
+}
+
+:host:has(.input_field_width_full) {
+	--input-width: 100%;
+
+	width: 100%;
+}
+
+.input_field__label_wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: var(--input-width);
+}
+
+.input_field__label {
+	font-size: 0.875rem;
+	font-weight: 500;
+	line-height: 1.3;
+	color: var(--main-font-color);
+}
+
+.input_field__required {
+	color: var(--input-error-color);
+}
+
+.input {
+	display: flex;
+	flex-shrink: 0;
+	gap: var(--input-gap);
+	align-items: center;
+	width: var(--input-width);
+	height: var(--input-height);
+	padding: var(--input-padding);
+	color: var(--input-color);
+	background-color: var(--input-background-color);
+	border: var(--input-border-width) solid var(--input-border-color);
+	border-radius: var(--input-border-radius);
+	box-shadow:
+		0 -1px 0 0 var(--shadow-color-10) inset,
+		0 1px 0 0 var(--shadow-color-10);
+	transition-property: background-color, color, box-shadow, border-color;
+	transition-duration: 0.2s;
+}
+
+.input:hover:not(.input_state_disabled):not(.input_state_error) {
+	border-color: var(--input-hover-border-color);
+}
+
+.input:focus-within {
+	border-color: var(--input-focus-border-color);
+	box-shadow:
+		0 -1px 0 0 var(--shadow-color-10) inset,
+		0 1px 0 0 var(--shadow-color-10),
+		0 0 0 2px var(--input-focus-shadow-color);
+}
+
+.input_state_error {
+	border-color: var(--input-error-color);
+}
+
+.input_state_error:focus-within {
+	border-color: var(--input-error-color);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--input-error-color) 24%, transparent);
+}
+
+.input_state_disabled {
+	color: var(--input-disabled-color);
+	background-color: var(--input-disabled-background-color);
+	border-color: var(--input-disabled-border-color);
+	box-shadow: none;
+	pointer-events: none;
+}
+
+.input__icon {
+	color: var(--input-icon-color);
+	font-size: 1rem;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.input__control {
+	width: 100%;
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	outline: none;
+	color: inherit;
+	font: inherit;
+	line-height: inherit;
+	background: transparent;
+}
+
+.input__control::placeholder {
+	color: var(--input-placeholder-color);
+	opacity: 1;
+}
+
+.input__control:disabled {
+	cursor: default;
+}
+
+.input_field__message {
+	margin: 6px 0 0;
+	font-size: 0.75rem;
+	line-height: 1.3;
+	color: var(--input-message-color);
+}
+
+.input_field__message_error {
+	color: var(--input-error-color);
+}
+
+/* Size */
+
+.input_size_small {
+	--input-height: 40px;
+	--input-gap: 8px;
+	--input-font-size: 0.875rem;
+	--input-padding-left: 12px;
+	--input-padding-right: 12px;
+}
+
+.input_size_large {
+	--input-height: 48px;
+}
+
+/* Theme */
+
+.input_theme_ghost {
+	--input-background-color: transparent;
+	--input-border-color: transparent;
+	--input-hover-border-color: transparent;
+	--input-focus-border-color: var(--main-soft-border-color);
+}
+
+/* Layout modifiers */
+
+.input_with_icon {
+	--input-padding-left: 12px;
+}

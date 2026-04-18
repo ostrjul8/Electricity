@@ -1,0 +1,38 @@
+@if (isOpen()) {
+    <div class="popup-backdrop" (click)="handleBackdropClick($event)">
+        <section
+            [class]="{
+                popup: true,
+                popup_size_small: size() === 'small',
+                popup_size_medium: size() === 'medium',
+                popup_size_large: size() === 'large',
+            }"
+            role="dialog"
+            aria-modal="true"
+            [attr.aria-labelledby]="title() ? headingId : null"
+        >
+            @if (title() || showCloseButton()) {
+                <header class="popup__header">
+                    @if (title()) {
+                        <h3 class="popup__title" [id]="headingId">{{ title() }}</h3>
+                    }
+
+                    @if (showCloseButton()) {
+                        <button
+                            type="button"
+                            class="popup__close"
+                            [attr.aria-label]="closeButtonLabel()"
+                            (click)="handleCloseButtonClick($event)"
+                        >
+                            &#10005;
+                        </button>
+                    }
+                </header>
+            }
+
+            <div class="popup__body">
+                <ng-content></ng-content>
+            </div>
+        </section>
+    </div>
+}

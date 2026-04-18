@@ -1,0 +1,55 @@
+<label
+	[class]="{
+		input_field__label_wrapper: true,
+		input_field_width_full: isFullWidth(),
+	}"
+>
+		@if (label()) {
+			<span class="input_field__label">
+			{{ label() }}
+			@if (isRequired()) {
+				<span class="input_field__required" aria-hidden="true">*</span>
+			}
+			</span>
+		}
+
+		<div
+			[class]="{
+				input: true,
+				input_theme_default: theme() === 'default',
+				input_theme_ghost: theme() === 'ghost',
+				input_size_small: size() === 'small',
+				input_size_large: size() === 'large',
+				input_with_icon: !!icon(),
+				input_state_error: !!error(),
+				input_state_disabled: isDisabled(),
+			}"
+		>
+			@if (icon()) {
+				<i [class]="'input__icon ' + icon()" aria-hidden="true"></i>
+			}
+
+			<input
+				class="input__control"
+				[name]="name() || null"
+				[type]="nativeInputType()"
+				[attr.inputmode]="inputMode()"
+				[value]="value()"
+				[placeholder]="placeholder()"
+				[disabled]="isDisabled()"
+				[readOnly]="isReadonly()"
+				[required]="isRequired()"
+				[attr.aria-invalid]="error() ? 'true' : 'false'"
+				(input)="handleInput($event)"
+				(change)="handleChange($event)"
+				(focus)="handleFocus($event)"
+				(blur)="handleBlur($event)"
+			/>
+		</div>
+	</label>
+
+@if (error()) {
+	<p class="input_field__message input_field__message_error">{{ error() }}</p>
+} @else if (hint()) {
+	<p class="input_field__message">{{ hint() }}</p>
+}

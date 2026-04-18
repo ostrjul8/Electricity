@@ -1,0 +1,129 @@
+:host {
+    position: relative;
+    z-index: var(--z-index-popup);
+}
+
+.popup-backdrop {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgb(15 23 42 / 56%);
+    backdrop-filter: blur(2px);
+    z-index: var(--z-index-popup);
+    animation: popup-backdrop-fade-in 0.18s ease-out;
+}
+
+.popup {
+    width: min(100%, var(--popup-width));
+    max-height: min(100dvh - 48px, 700px);
+    padding: 20px;
+    overflow: auto;
+    color: var(--main-font-color);
+    background: var(--main-background-color);
+    border: 1px solid var(--secondary-color);
+    border-radius: 20px;
+    box-shadow:
+        0 12px 36px rgb(15 23 42 / 20%),
+        0 2px 8px rgb(15 23 42 / 10%);
+    animation: popup-surface-slide-up 0.22s ease-out;
+}
+
+.popup_size_small {
+    --popup-width: 420px;
+}
+
+.popup_size_medium {
+    --popup-width: 560px;
+}
+
+.popup_size_large {
+    --popup-width: 760px;
+}
+
+.popup__header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.popup__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--main-font-color);
+}
+
+.popup__close {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    color: var(--secondary-color);
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.popup__close:hover {
+    color: var(--main-font-color);
+    background: var(--main-soft-color);
+    border-color: var(--main-soft-border-color);
+}
+
+.popup__close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--outline-color);
+}
+
+.popup__body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+@keyframes popup-backdrop-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes popup-surface-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 600px) {
+    .popup-backdrop {
+        align-items: flex-end;
+        padding: 12px;
+    }
+
+    .popup {
+        width: 100%;
+        max-height: min(100dvh - 24px, 85dvh);
+        padding: 16px;
+        border-radius: 18px 18px 14px 14px;
+    }
+}

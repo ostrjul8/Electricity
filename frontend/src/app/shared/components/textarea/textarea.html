@@ -1,0 +1,41 @@
+<label
+    [class]="{
+        textarea_field__label_wrapper: true,
+        textarea_field_width_full: isFullWidth()
+    }"
+>
+    @if (label()) {
+        <span class="textarea_field__label">
+            {{ label() }}
+        </span>
+    }
+
+    <div
+        [class]="{
+            textarea: true,
+            textarea_theme_primary: theme() === 'primary',
+            textarea_theme_ghost: theme() === 'ghost',
+            textarea_state_error: !!error(),
+            textarea_state_disabled: isDisabled()
+        }"
+    >
+        <textarea
+            class="textarea__control"
+            [name]="name() || null"
+            [value]="value()"
+            [placeholder]="placeholder()"
+            [disabled]="isDisabled()"
+            [attr.maxlength]="maxLength()"
+            [attr.aria-invalid]="error() ? 'true' : 'false'"
+            (input)="handleInput($event)"
+            (focus)="handleFocus($event)"
+            (blur)="handleBlur($event)"
+        ></textarea>
+    </div>
+</label>
+
+@if (error()) {
+    <p class="textarea_field__message textarea_field__message_error">{{ error() }}</p>
+} @else if (hint()) {
+    <p class="textarea_field__message">{{ hint() }}</p>
+}

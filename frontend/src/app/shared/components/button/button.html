@@ -1,0 +1,34 @@
+<button
+    [class]="{
+        button: true,
+        button_theme_primary: theme() === 'primary',
+        button_theme_secondary: theme() === 'secondary',
+        button_theme_danger: theme() === 'danger',
+        button_type_default: type() === 'default',
+        button_type_underline: type() === 'underline',
+        button_type_outline: type() === 'outline',
+        button_type_empty: type() === 'empty',
+        button_size_small: size() === 'small',
+        button_size_large: size() === 'large',
+        button_width_full: isFullWidth(),
+        button_state_loading: loading(),
+        button_with_icon: !!icon() && !!label(),
+        button_icon_only: !!icon() && !label(),
+    }"
+    [routerLink]="routerLinkValue() ?? null"
+    [type]="buttonType()"
+    [disabled]="isDisabled() || loading()"
+    [attr.aria-busy]="loading() ? 'true' : 'false'"
+    [attr.aria-label]="ariaLabel() || label()"
+    (click)="handleClick($event)"
+>
+    @if (loading()) {
+        <span class="button__spinner" aria-hidden="true"></span>
+    } @else if (icon()) {
+        <i [class]="'button__icon ' + icon()" aria-hidden="true"></i>
+    }
+
+    @if (label()) {
+        <span class="button__label">{{ label() }}</span>
+    }
+</button>

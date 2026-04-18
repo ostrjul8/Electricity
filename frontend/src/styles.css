@@ -1,32 +1,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 :root {
+	--z-index-1: 1010;
+	--z-index-2: 1020;
+	--z-index-3: 1030;
+	--z-index-popup: 1040;
+	--z-index-message: 1050;
+
 	--white-color: #ffffff;
 
-	--main-color: #1f6feb;
-	--main-hover-color: #155bc1;
-	--main-soft-color: #eff5ff;
-	--main-soft-alt-color: #edf4ff;
-	--main-soft-border-color: #9bc0ff;
-	--main-soft-border-hover-color: #7cabfb;
-	--main-overlay-8: rgb(31 111 235 / 8%);
+	--main-color: #fbbf24;
+	--main-hover-color: #d19e1d;
+	--main-background-color: #0f172a;
 
-	--gray-color: #6b7280;
-	--gray-hover-color: #4b5563;
-	--gray-overlay-10: rgb(107 114 128 / 10%);
+	--secondary-color: #94a3b8;
+	--secondary-hover-color: #64748b;
 
 	--danger-color: #dc2626;
 	--danger-hover-color: #b91c1c;
 
-	--main-font-color: #0f172a;
-	--main-font-disabled-color: #94a3b8;
+	--main-font-color: #ffffff;
+	--secondary-font-color: #0f172a;
+	
 	--disabled-color: #e2e8f0;
+	--main-font-disabled-color: #94a3b8;
+	
 	--outline-color: rgb(31 111 235 / 32%);
 	--shadow-color-10: rgb(15 23 42 / 10%);
+
+	--error-background-color: #fef2f2;
+	--error-font-color: #991b1b;
 }
 
 body {
     color-scheme: light;
     overflow-x: hidden;
     font-family: "Inter";
+	color: var(--main-font-color);
+	background-color: var(--main-background-color);
 }

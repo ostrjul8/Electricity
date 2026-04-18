@@ -4,13 +4,9 @@
     height: 100%;
 }
 
-.layout__sidebar {
-    width: 250px;
-    height: 100dvh;
-    border-right: 1px solid #e0e0e0;
-}
-
 .layout__main {
     flex-grow: 1;
+    height: 100dvh;
     overflow-y: auto;
 }
+

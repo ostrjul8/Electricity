@@ -93,7 +93,7 @@ namespace ElectricityAPI.Controllers
             {
                 take = take < 1 ? 1 : take;
                 take = take > 10 ? 10 : take;
-
+            
                 List<BuildingDTO> result = await _buildingQueryService.GetByAddressAsync(address);
 
                 if (result.Count == 0)
@@ -106,6 +106,27 @@ namespace ElectricityAPI.Controllers
             catch (ArgumentException ex)
             {
                 return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("{id:int}/csv-report")]
+        public async Task<IActionResult> GetCsvReport(int id)
+        {
+            try
+            {
+                (string FileName, string CsvContent)? report = await _buildingQueryService.GenerateBuildingCsvReportAsync(id);
+
+                if (report is null)
+                {
+                    return NotFound(new { message = $"Cannot generate CSV report for building id {id}." });
+                }
+
+                byte[] csvBytes = Encoding.UTF8.GetBytes(report.Value.CsvContent);
+                return File(csvBytes, "text/csv; charset=utf-8", report.Value.FileName);
             }
             catch (Exception ex)
             {

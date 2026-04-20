@@ -3,8 +3,10 @@ import { Component, computed, inject, input, InputSignal, OnDestroy, signal } fr
 import { ChatService } from "@shared/services/chat.service";
 import { MessageType } from "@shared/types/MessageType";
 import { OpenChatResponseType } from "@shared/types/OpenChatResponseType";
+import { PagedResultType } from "@shared/types/PagedResultType";
 import { Button } from "../button/button";
 import { Textarea } from "../textarea/textarea";
+import { AuthService } from "@shared/services/auth.service";
 
 @Component({
     selector: "app-floating-chat",
@@ -13,14 +15,15 @@ import { Textarea } from "../textarea/textarea";
     styleUrl: "./floating-chat.css",
 })
 export class FloatingChat implements OnDestroy {
-    private readonly pinnedChatStorageKey: string = "";
     private readonly messagesPollingIntervalMs: number = 10000;
 
     protected readonly isOpen = signal<boolean>(false);
 
     public readonly isEnabled: InputSignal<boolean> = input<boolean>(true);
 
-    protected readonly activeChatId = signal<number | null>(this.getPinnedChatId());
+    protected readonly activeChatId = signal<number | null>(null);
+    protected readonly pinnedChatId = computed<number | null>(() => this.chatService.getPinnedChatId());
+    protected readonly guestAccessToken = signal<string | null>(null);
     protected readonly messages = signal<MessageType[]>([]);
     protected readonly loadingMessages = signal<boolean>(false);
     protected readonly sending = signal<boolean>(false);
@@ -37,9 +40,11 @@ export class FloatingChat implements OnDestroy {
         return `Чат #${activeId}`;
     });
 
-    private readonly chatService: ChatService = inject(ChatService);
     private messagesPollingTimer: ReturnType<typeof setInterval> | null = null;
     private isPollingInProgress: boolean = false;
+
+    private readonly authService: AuthService = inject(AuthService);
+    private readonly chatService: ChatService = inject(ChatService);
 
     public ngOnDestroy(): void {
         this.stopMessagesPolling();
@@ -49,7 +54,12 @@ export class FloatingChat implements OnDestroy {
         this.isOpen.update((value: boolean) => !value);
 
         if (this.isOpen()) {
-            await this.loadPinnedChatMessages();
+            if (this.isAuthorizedUser()) {
+                await this.loadPinnedChatMessages();
+            } else {
+                await this.loadGuestChatMessages();
+            }
+
             this.startMessagesPolling();
         } else {
             this.stopMessagesPolling();
@@ -76,7 +86,36 @@ export class FloatingChat implements OnDestroy {
         this.errorMessage.set(null);
 
         try {
+            const isAuthorizedUser: boolean = this.isAuthorizedUser();
             const selectedChatId: number | null = this.activeChatId();
+
+            if (!isAuthorizedUser) {
+                const currentGuestAccessToken: string | null = this.guestAccessToken();
+
+                if (selectedChatId !== null && currentGuestAccessToken) {
+                    const newMessage: MessageType = await this.chatService.sendGuestMessage(
+                        selectedChatId,
+                        text,
+                        currentGuestAccessToken,
+                    );
+
+                    this.messages.update((items: MessageType[]) => [...items, newMessage]);
+                    this.draft.set("");
+                    this.startMessagesPolling();
+
+                    return;
+                }
+
+                const createdChat: OpenChatResponseType = await this.chatService.createChat(text);
+
+                this.draft.set("");
+                this.activeChatId.set(createdChat.chatId);
+                this.guestAccessToken.set(createdChat.guestAccessToken ?? null);
+                this.messages.set([createdChat.message]);
+                this.startMessagesPolling();
+
+                return;
+            }
 
             if (selectedChatId === null) {
                 const createdChat: OpenChatResponseType = await this.chatService.createChat(text);
@@ -84,7 +123,7 @@ export class FloatingChat implements OnDestroy {
                 this.draft.set("");
 
                 this.activeChatId.set(createdChat.chatId);
-                this.persistPinnedChatId(createdChat.chatId);
+                this.chatService.setPinnedChatId(createdChat.chatId);
 
                 await this.loadMessages(createdChat.chatId);
                 this.startMessagesPolling();
@@ -103,14 +142,29 @@ export class FloatingChat implements OnDestroy {
     }
 
     private async loadPinnedChatMessages(): Promise<void> {
-        const pinnedChatId: number | null = this.activeChatId();
+        const pinnedChatId: number | null = this.pinnedChatId();
 
         if (pinnedChatId === null) {
+            this.activeChatId.set(null);
             this.messages.set([]);
             return;
         }
 
+        this.activeChatId.set(pinnedChatId);
+
         await this.loadMessages(pinnedChatId);
+    }
+
+    private async loadGuestChatMessages(): Promise<void> {
+        const chatId: number | null = this.activeChatId();
+        const accessToken: string | null = this.guestAccessToken();
+
+        if (chatId === null || !accessToken) {
+            this.messages.set([]);
+            return;
+        }
+
+        await this.loadMessages(chatId);
     }
 
     private async loadMessages(chatId: number, silent: boolean = false): Promise<void> {
@@ -119,7 +173,20 @@ export class FloatingChat implements OnDestroy {
         }
 
         try {
-            const result = await this.chatService.getMessagesLazy(chatId, 1, 30);
+            let result: PagedResultType<MessageType>;
+
+            if (this.isAuthorizedUser()) {
+                result = await this.chatService.getMessagesLazy(chatId, 1, 30);
+            } else {
+                const accessToken: string | null = this.guestAccessToken();
+
+                if (!accessToken) {
+                    this.messages.set([]);
+                    return;
+                }
+
+                result = await this.chatService.getGuestMessagesLazy(chatId, accessToken, 1, 30);
+            }
 
             this.messages.set(result.items);
         } catch (error) {
@@ -133,6 +200,10 @@ export class FloatingChat implements OnDestroy {
 
     private startMessagesPolling(): void {
         if (this.messagesPollingTimer !== null) {
+            return;
+        }
+
+        if (!this.canPollMessages()) {
             return;
         }
 
@@ -155,16 +226,23 @@ export class FloatingChat implements OnDestroy {
             return;
         }
 
-        const pinnedChatId: number | null = this.activeChatId();
+        if (!this.canPollMessages()) {
+            this.stopMessagesPolling();
+            return;
+        }
 
-        if (pinnedChatId === null) {
+        const pollingChatId: number | null = this.isAuthorizedUser()
+            ? this.pinnedChatId()
+            : this.activeChatId();
+
+        if (pollingChatId === null) {
             return;
         }
 
         this.isPollingInProgress = true;
 
         try {
-            await this.loadMessages(pinnedChatId, true);
+            await this.loadMessages(pollingChatId, true);
         } finally {
             this.isPollingInProgress = false;
         }
@@ -178,19 +256,15 @@ export class FloatingChat implements OnDestroy {
         return fallback;
     }
 
-    private getPinnedChatId(): number | null {
-        const rawPinnedChatId: string | null = localStorage.getItem(this.pinnedChatStorageKey);
-
-        if (!rawPinnedChatId) {
-            return null;
-        }
-
-        const parsedPinnedChatId: number = Number.parseInt(rawPinnedChatId, 10);
-
-        return Number.isFinite(parsedPinnedChatId) ? parsedPinnedChatId : null;
+    private isAuthorizedUser(): boolean {
+        return this.authService.isLoggedIn();
     }
 
-    private persistPinnedChatId(chatId: number): void {
-        localStorage.setItem(this.pinnedChatStorageKey, chatId.toString());
+    private canPollMessages(): boolean {
+        if (this.isAuthorizedUser()) {
+            return this.pinnedChatId() !== null;
+        }
+
+        return this.activeChatId() !== null && Boolean(this.guestAccessToken());
     }
 }

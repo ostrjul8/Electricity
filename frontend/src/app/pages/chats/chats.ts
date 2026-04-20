@@ -67,7 +67,12 @@ export class Chats implements OnInit {
     protected async selectChat(chatId: number): Promise<void> {
         this.activeChatId.set(chatId);
         this.isCreatingNewChat.set(false);
-        await this.loadMessages(chatId);
+
+        const hasLoadedMessages: boolean = await this.loadMessages(chatId);
+
+        if (hasLoadedMessages && this.isAdmin()) {
+            this.markChatAsRead(chatId);
+        }
     }
 
     protected async toggleOnlyUnread(event: Event): Promise<void> {
@@ -132,18 +137,37 @@ export class Chats implements OnInit {
         }
     }
 
-    private async loadMessages(chatId: number): Promise<void> {
+    private async loadMessages(chatId: number): Promise<boolean> {
         this.loadingMessages.set(true);
 
         try {
             const result: PagedResultType<MessageType> = await this.chatService.getMessagesLazy(chatId, 1, 50);
             this.messages.set(result.items);
+
+            return true;
         } catch (error) {
             this.messages.set([]);
             this.errorMessage.set(this.getReadableError(error, "Не вдалося завантажити повідомлення."));
+
+            return false;
         } finally {
             this.loadingMessages.set(false);
         }
+    }
+
+    private markChatAsRead(chatId: number): void {
+        this.chats.update((items: ChatType[]) =>
+            items.map((chat: ChatType) => {
+                if (chat.id !== chatId || chat.isRead) {
+                    return chat;
+                }
+
+                return {
+                    ...chat,
+                    isRead: true,
+                };
+            }),
+        );
     }
 
     private getReadableError(error: unknown, fallback: string): string {

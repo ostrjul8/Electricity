@@ -24,15 +24,17 @@
                 ></ui-button>
             }
 
-            <label class="chats-shell__filter" for="onlyUnreadChats">
-                <input
-                    id="onlyUnreadChats"
-                    type="checkbox"
-                    [checked]="showOnlyUnread()"
-                    (change)="toggleOnlyUnread($event)"
-                />
-                <span>Показувати лише непрочитані</span>
-            </label>
+            @if (isAdmin()) {
+                <label class="chats-shell__filter" for="onlyUnreadChats">
+                    <input
+                        id="onlyUnreadChats"
+                        type="checkbox"
+                        [checked]="showOnlyUnread()"
+                        (change)="toggleOnlyUnread($event)"
+                    />
+                    <span>Показувати лише непрочитані</span>
+                </label>
+            }
 
             @if (loadingChats()) {
                 <div class="chats-shell__state">Завантаження чатів...</div>
@@ -50,7 +52,7 @@
                             <strong>Чат #{{ chat.id }}</strong>
                             <small>Користувач #{{ chat.userId }}</small>
 
-                            @if (!chat.isRead) {
+                            @if (isAdmin() && !chat.isRead) {
                                 <span class="chats-shell__unread"></span>
                             }
                         </button>

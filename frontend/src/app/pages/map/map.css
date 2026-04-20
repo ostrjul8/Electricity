@@ -49,6 +49,11 @@
 	accent-color: var(--main-color);
 }
 
+.map-page__anomalies-actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
 .map-page__suggestions {
 	position: absolute;
 	top: calc(100% + 6px);
@@ -242,7 +247,7 @@
 .map-page__loading-text {
 	padding: 10px 14px;
 	border-radius: 999px;
-	background-color: rgb(255 255 255 / 95%);
+	background-color: var(--main-background-color);
 	color: var(--main-font-color);
 	font-weight: 600;
 	font-size: 14px;

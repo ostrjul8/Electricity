@@ -41,10 +41,6 @@ export class AuthService {
 
     private readonly httpClient: HttpClient = inject(HttpClient);
 
-    ngOnInit(): void {
-        this.init();
-    }
-
     public async signUp(
         credentials: RegisterCredentials,
     ): Promise<{ message: string }> {

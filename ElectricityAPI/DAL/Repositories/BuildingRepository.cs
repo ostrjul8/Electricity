@@ -41,7 +41,8 @@ namespace DAL.Repositories
                 {
                     Id = b.Id,
                     Latitude = b.Latitude,
-                    Longitude = b.Longitude
+                    Longitude = b.Longitude,
+                    AverageConsumption = b.AverageConsumption,
                 })
                 .ToListAsync();
         }

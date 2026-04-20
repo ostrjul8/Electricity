@@ -155,7 +155,13 @@ namespace ElectricityAPI.Controllers
                     return NotFound(new { message = $"Cannot generate CSV report for building id {id}." });
                 }
 
-                byte[] csvBytes = Encoding.UTF8.GetBytes(report.Value.CsvContent);
+                byte[] utf8Bom = Encoding.UTF8.GetPreamble();
+                byte[] csvContentBytes = Encoding.UTF8.GetBytes(report.Value.CsvContent);
+                byte[] csvBytes = new byte[utf8Bom.Length + csvContentBytes.Length];
+
+                Buffer.BlockCopy(utf8Bom, 0, csvBytes, 0, utf8Bom.Length);
+                Buffer.BlockCopy(csvContentBytes, 0, csvBytes, utf8Bom.Length, csvContentBytes.Length);
+
                 return File(csvBytes, "text/csv; charset=utf-8", report.Value.FileName);
             }
             catch (Exception ex)

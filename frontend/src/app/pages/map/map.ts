@@ -1,6 +1,7 @@
 import {
     AfterViewInit,
     Component,
+    computed,
     ElementRef,
     OnDestroy,
     Signal,
@@ -9,8 +10,9 @@ import {
     signal,
     viewChild,
 } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { BuildingDetailsPopup } from "@shared/components/building-details-popup/building-details-popup";
+import { Button } from "@shared/components/button/button";
 import { Input } from "@shared/components/input/input";
 import { Range } from "@shared/components/range/range";
 import { AuthService } from "@shared/services/auth.service";
@@ -25,11 +27,12 @@ type MapLegendItem = {
     level: number;
     name: string;
     color: string;
+    isAdminOnly: boolean;
 };
 
 @Component({
     selector: "app-map",
-    imports: [BuildingDetailsPopup, Input, Range],
+    imports: [BuildingDetailsPopup, Button, Input, Range],
     templateUrl: "./map.html",
     styleUrl: "./map.css",
 })
@@ -41,19 +44,24 @@ export class Map implements AfterViewInit, OnDestroy {
     protected readonly isLoading: WritableSignal<boolean> = signal<boolean>(true);
     protected readonly errorMessage: WritableSignal<string | null> = signal<string | null>(null);
     protected readonly pointsCount: WritableSignal<number> = signal<number>(0);
+    
     protected readonly isAdmin: WritableSignal<boolean> = signal<boolean>(false);
     protected readonly anomaliesOnly: WritableSignal<boolean> = signal<boolean>(false);
-    protected readonly anomalyDeviationPercent: WritableSignal<number> = signal<number>(30);
+    protected readonly anomalyDeviationPercent: WritableSignal<number> = signal<number>(40);
+    protected readonly appliedAnomalyDeviationPercent: WritableSignal<number> = signal<number>(40);
+    protected readonly hasPendingAnomalyChanges: Signal<boolean> = computed(
+        () => this.anomalyDeviationPercent() !== this.appliedAnomalyDeviationPercent(),
+    );
 
     protected readonly searchAddress: WritableSignal<string> = signal<string>("");
     protected readonly legendItems: ReadonlyArray<MapLegendItem> = [
-        { level: 1, name: "Замалі", color: "#94a3b8" },
-        { level: 2, name: "Рівень 1", color: "#15803d" },
-        { level: 3, name: "Рівень 2", color: "#f59e0b" },
-        { level: 4, name: "Рівень 3", color: "#f97316" },
-        { level: 5, name: "Рівень 4", color: "#ef4444" },
-        { level: 6, name: "Завеликі", color: "#6b0e0e" },
-        { level: 7, name: "Аномалія (адмін-фільтр)", color: "#7c3aed" },
+        { level: 1, name: "Замалі", color: "#94a3b8", isAdminOnly: false },
+        { level: 2, name: "Рівень 1", color: "#15803d", isAdminOnly: false },
+        { level: 3, name: "Рівень 2", color: "#f59e0b", isAdminOnly: false },
+        { level: 4, name: "Рівень 3", color: "#f97316", isAdminOnly: false },
+        { level: 5, name: "Рівень 4", color: "#ef4444", isAdminOnly: false },
+        { level: 6, name: "Завеликі", color: "#6b0e0e", isAdminOnly: false },
+        { level: 7, name: "Аномалія (адмін-фільтр)", color: "#7c3aed", isAdminOnly: true },
     ];
     protected readonly showSearchSuggestions: WritableSignal<boolean> = signal<boolean>(false);
     protected readonly loadingSearchSuggestions: WritableSignal<boolean> = signal<boolean>(false);
@@ -65,11 +73,13 @@ export class Map implements AfterViewInit, OnDestroy {
     private hideSuggestionsTimeoutId: ReturnType<typeof setTimeout> | null = null;
     private searchSuggestionsTimeoutId: ReturnType<typeof setTimeout> | null = null;
     private searchSuggestionsRequestId: number = 0;
+    private mapPointsRequestId: number = 0;
 
     private readonly mapService: MapService = inject(MapService);
     private readonly buildingService: BuildingService = inject(BuildingService);
     private readonly authService: AuthService = inject(AuthService);
     private readonly activatedRoute: ActivatedRoute = inject(ActivatedRoute);
+    private readonly router: Router = inject(Router);
 
     public async ngAfterViewInit(): Promise<void> {
         await this.resolveAdminState();
@@ -110,14 +120,38 @@ export class Map implements AfterViewInit, OnDestroy {
         }
 
         this.anomaliesOnly.set(nextValue);
+
+        if (nextValue) {
+            this.appliedAnomalyDeviationPercent.set(this.anomalyDeviationPercent());
+        }
+
+        if (!nextValue && this.activatedRoute.snapshot.data["anomaliesOnly"] === true) {
+            await this.router.navigate(["/map"]);
+            return;
+        }
+
         await this.loadMapPoints();
     }
 
-    protected async handleDeviationPercentChange(nextValue: number): Promise<void> {
+    protected handleDeviationPercentChange(nextValue: number): void {
         this.anomalyDeviationPercent.set(nextValue);
+    }
 
-        if (this.anomaliesOnly()) {
-            await this.loadMapPoints();
+    protected async applyAnomalyFilters(): Promise<void> {
+        if (!this.anomaliesOnly()) {
+            return;
+        }
+
+        if (!this.hasPendingAnomalyChanges()) {
+            return;
+        }
+
+        const previousAppliedPercent: number = this.appliedAnomalyDeviationPercent();
+        this.appliedAnomalyDeviationPercent.set(this.anomalyDeviationPercent());
+        await this.loadMapPoints();
+
+        if (this.errorMessage() !== null) {
+            this.appliedAnomalyDeviationPercent.set(previousAppliedPercent);
         }
     }
 
@@ -248,13 +282,20 @@ export class Map implements AfterViewInit, OnDestroy {
             return;
         }
 
+        const requestId: number = ++this.mapPointsRequestId;
+
         this.isLoading.set(true);
         this.errorMessage.set(null);
 
         try {
             const points: MapPointType[] = this.anomaliesOnly()
-                ? await this.mapService.getAnomalyMapPoints(this.anomalyDeviationPercent())
+                ? await this.mapService.getAnomalyMapPoints(this.appliedAnomalyDeviationPercent())
                 : await this.mapService.getMapPoints();
+
+            if (requestId !== this.mapPointsRequestId || !this.clusterLayer || !this.mapInstance) {
+                return;
+            }
+
             const markers: Leaflet.Marker[] = points.map((point: MapPointType) => this.createMarker(point));
 
             this.clusterLayer.clearLayers();
@@ -284,12 +325,18 @@ export class Map implements AfterViewInit, OnDestroy {
                 this.mapInstance.setView([50.4501, 30.5234], 11);
             }
         } catch (error) {
+            if (requestId !== this.mapPointsRequestId || !this.clusterLayer) {
+                return;
+            }
+
             this.clusterLayer.clearLayers();
             this.pointsCount.set(0);
             this.errorMessage.set(this.getReadableError(error));
         } finally {
-            this.isLoading.set(false);
-            this.mapInstance.invalidateSize();
+            if (requestId === this.mapPointsRequestId) {
+                this.isLoading.set(false);
+                this.mapInstance?.invalidateSize();
+            }
         }
     }
 

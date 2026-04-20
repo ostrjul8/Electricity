@@ -52,15 +52,25 @@
                     <ui-range
                         [(value)]="anomalyDeviationPercent"
                         label="Поріг відхилення (%)"
-                        hint="Показуються лише точки, де споживання вище норми на вибраний %"
-                        [minNumber]="0"
-                        [maxNumber]="300"
+                        hint="Показуються лише точки, де споживання вище середнього на вибраний %"
+                        [minNumber]="30"
+                        [maxNumber]="80"
                         [step]="5"
                         [showBoundaries]="true"
                         [showValue]="true"
                         [isFullWidth]="true"
                         (valueChange)="handleDeviationPercentChange($event)"
                     ></ui-range>
+
+                    <div class="map-page__anomalies-actions">
+                        <ui-button
+                            label="Застосувати"
+                            theme="secondary"
+                            type="outline"
+                            [isDisabled]="isLoading() || !hasPendingAnomalyChanges()"
+                            (buttonClick)="applyAnomalyFilters()"
+                        ></ui-button>
+                    </div>
                 }
             </section>
         }
@@ -78,10 +88,12 @@
 
             <ul class="map-page__legend-list">
                 @for (item of legendItems; track item.level) {
-                    <li class="map-page__legend-item">
-                        <span class="map-page__legend-dot" [style.background]="item.color" aria-hidden="true"></span>
-                        <span>{{ item.name }}</span>
-                    </li>
+                    @if (!item.isAdminOnly || isAdmin()) {
+                        <li class="map-page__legend-item">
+                            <span class="map-page__legend-dot" [style.background]="item.color" aria-hidden="true"></span>
+                            <span>{{ item.name }}</span>
+                        </li>
+                    }
                 }
             </ul>
         </section>

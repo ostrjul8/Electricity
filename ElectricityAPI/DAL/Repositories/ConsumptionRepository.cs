@@ -29,6 +29,19 @@ namespace DAL.Repositories
                 .ToListAsync();
         }
 
+        public Task<Dictionary<int, double>> GetAverageByBuildingIdAsync()
+        {
+            return _context.ConsumptionRecords
+                .AsNoTracking()
+                .GroupBy(c => c.BuildingId)
+                .Select(g => new
+                {
+                    BuildingId = g.Key,
+                    AverageConsumption = g.Average(x => x.ConsumptionAmount),
+                })
+                .ToDictionaryAsync(x => x.BuildingId, x => x.AverageConsumption);
+        }
+
         public Task<List<ConsumptionRecord>> GetRecentByBuildingIdAsync(int buildingId, int take)
         {
             return _context.ConsumptionRecords

@@ -61,10 +61,23 @@ namespace BLL.Services
             Dictionary<int, double> latestByBuildingId = latestConsumptionRecords
                 .ToDictionary(c => c.BuildingId, c => c.ConsumptionAmount);
 
-            List<(Building Building, double LatestConsumption)> anomalies = buildings
+            Dictionary<int, double> averageByBuildingId = await _consumptionRepository.GetAverageByBuildingIdAsync();
+
+            List<(Building Building, double LatestConsumption, double AverageConsumption)> anomalies = buildings
                 .Where(b => latestByBuildingId.TryGetValue(b.Id, out _))
-                .Select(b => (Building: b, LatestConsumption: latestByBuildingId[b.Id]))
-                .Where(entry => GetPositiveDeviationPercent(entry.Building.AverageConsumption, entry.LatestConsumption) >= deviationPercent)
+                .Select(b =>
+                {
+                    double averageConsumption = averageByBuildingId.TryGetValue(b.Id, out double computedAverage)
+                        ? computedAverage
+                        : b.AverageConsumption;
+
+                    return (
+                        Building: b,
+                        LatestConsumption: latestByBuildingId[b.Id],
+                        AverageConsumption: averageConsumption
+                    );
+                })
+                .Where(entry => GetPositiveDeviationPercent(entry.AverageConsumption, entry.LatestConsumption) >= deviationPercent)
                 .ToList();
 
             if (!anomalies.Any())

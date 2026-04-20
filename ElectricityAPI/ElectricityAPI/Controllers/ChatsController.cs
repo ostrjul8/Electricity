@@ -77,6 +77,36 @@ namespace ElectricityAPI.Controllers
             }
         }
 
+        [AllowAnonymous]
+        [HttpPost("{chatId:int}/messages/guest")]
+        public async Task<IActionResult> SendGuestMessage(
+            int chatId,
+            [FromQuery] string accessToken,
+            [FromBody] SendMessageRequestDTO request)
+        {
+            try
+            {
+                MessageDTO result = await _chatService.SendGuestMessageAsync(chatId, accessToken, request.Text);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         [HttpGet("lazy")]
         public async Task<IActionResult> GetChatsLazy(
             [FromQuery] bool onlyUnread = false,
@@ -119,6 +149,42 @@ namespace ElectricityAPI.Controllers
 
                 PagedResultDTO<MessageDTO> messages = await _chatService.GetMessagesPagedAsync(userId, isAdmin, chatId, page, pageSize);
                 return Ok(messages);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpGet("{chatId:int}/messages/guest/lazy")]
+        public async Task<IActionResult> GetGuestMessagesLazy(
+            int chatId,
+            [FromQuery] string accessToken,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 30)
+        {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 30 : pageSize;
+            pageSize = pageSize > 200 ? 200 : pageSize;
+
+            try
+            {
+                PagedResultDTO<MessageDTO> messages = await _chatService.GetGuestMessagesPagedAsync(
+                    chatId,
+                    accessToken,
+                    page,
+                    pageSize);
+
+                return Ok(messages);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (KeyNotFoundException ex)
             {

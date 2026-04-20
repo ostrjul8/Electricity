@@ -43,6 +43,40 @@ export class MapService {
             .filter((point: MapPointType | null): point is MapPointType => point !== null);
     }
 
+    public async downloadAnomalyCsvReport(deviationPercent: number): Promise<void> {
+        const normalizedDeviationPercent: number = Math.max(0, deviationPercent);
+
+        const response: HttpResponse<Blob> = await firstValueFrom(
+            this.httpClient.get(
+                `${environment.serverURL}/api/buildings/map-points/anomalies/csv-report?deviationPercent=${normalizedDeviationPercent}`,
+                {
+                    observe: "response",
+                    responseType: "blob",
+                    headers: this.createAuthorizationHeaders(),
+                },
+            ),
+        );
+
+        const csvBlob: Blob | null = response.body;
+        if (csvBlob === null) {
+            throw new Error("Порожній файл звіту.");
+        }
+
+        const contentDisposition: string | null = response.headers.get("Content-Disposition");
+        const fileName: string =
+            this.tryGetFileNameFromContentDisposition(contentDisposition)
+            ?? `anomalies-report-${normalizedDeviationPercent}.csv`;
+
+        const objectUrl: string = URL.createObjectURL(csvBlob);
+        const anchor: HTMLAnchorElement = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = fileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(objectUrl);
+    }
+
     private async getMapPointsPayload(endpoint: string): Promise<MapPointApiType[]> {
         const response: HttpResponse<string> = await firstValueFrom(
             this.httpClient.get(endpoint, {
@@ -100,5 +134,19 @@ export class MapService {
 
     private isFiniteNumber(value: unknown): value is number {
         return typeof value === "number" && Number.isFinite(value);
+    }
+
+    private tryGetFileNameFromContentDisposition(contentDisposition: string | null): string | null {
+        if (!contentDisposition) {
+            return null;
+        }
+
+        const utf8Match: RegExpMatchArray | null = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match?.[1]) {
+            return decodeURIComponent(utf8Match[1]);
+        }
+
+        const basicMatch: RegExpMatchArray | null = contentDisposition.match(/filename="?([^";]+)"?/i);
+        return basicMatch?.[1] ?? null;
     }
 }

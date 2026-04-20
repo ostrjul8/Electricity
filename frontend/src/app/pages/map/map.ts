@@ -42,6 +42,7 @@ export class Map implements AfterViewInit, OnDestroy {
     private readonly buildingDetailsPopup: Signal<BuildingDetailsPopup> = viewChild.required(BuildingDetailsPopup);
 
     protected readonly isLoading: WritableSignal<boolean> = signal<boolean>(true);
+    protected readonly isGeneratingAnomalyReport: WritableSignal<boolean> = signal<boolean>(false);
     protected readonly errorMessage: WritableSignal<string | null> = signal<string | null>(null);
     protected readonly pointsCount: WritableSignal<number> = signal<number>(0);
     
@@ -152,6 +153,22 @@ export class Map implements AfterViewInit, OnDestroy {
 
         if (this.errorMessage() !== null) {
             this.appliedAnomalyDeviationPercent.set(previousAppliedPercent);
+        }
+    }
+
+    protected async generateAnomalyReport(): Promise<void> {
+        if (!this.anomaliesOnly() || this.isGeneratingAnomalyReport()) {
+            return;
+        }
+
+        this.isGeneratingAnomalyReport.set(true);
+
+        try {
+            await this.mapService.downloadAnomalyCsvReport(this.anomalyDeviationPercent());
+        } catch (error) {
+            this.errorMessage.set(this.getReadableError(error));
+        } finally {
+            this.isGeneratingAnomalyReport.set(false);
         }
     }
 

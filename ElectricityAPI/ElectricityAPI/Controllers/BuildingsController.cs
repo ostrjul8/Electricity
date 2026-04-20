@@ -99,6 +99,34 @@ namespace ElectricityAPI.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpGet("map-points/anomalies/csv-report")]
+        public async Task<IActionResult> GetAnomalyCsvReport([FromQuery] double deviationPercent)
+        {
+            try
+            {
+                if (deviationPercent < 0)
+                {
+                    return BadRequest(new { error = "deviationPercent must be greater than or equal to 0." });
+                }
+
+                (string FileName, string CsvContent) report = await _buildingMapService.GenerateAnomalyCsvReportAsync(deviationPercent);
+
+                byte[] utf8Bom = Encoding.UTF8.GetPreamble();
+                byte[] csvContentBytes = Encoding.UTF8.GetBytes(report.CsvContent);
+                byte[] csvBytes = new byte[utf8Bom.Length + csvContentBytes.Length];
+
+                Buffer.BlockCopy(utf8Bom, 0, csvBytes, 0, utf8Bom.Length);
+                Buffer.BlockCopy(csvContentBytes, 0, csvBytes, utf8Bom.Length, csvContentBytes.Length);
+
+                return File(csvBytes, "text/csv; charset=utf-8", report.FileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {

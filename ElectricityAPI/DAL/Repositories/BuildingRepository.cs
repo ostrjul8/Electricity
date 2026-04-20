@@ -40,9 +40,18 @@ namespace DAL.Repositories
                 .Select(b => new Building
                 {
                     Id = b.Id,
+                    Name = b.Name,
+                    Address = b.Address,
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
                     AverageConsumption = b.AverageConsumption,
+                    District = b.District == null
+                        ? null
+                        : new District
+                        {
+                            Id = b.District.Id,
+                            Name = b.District.Name,
+                        },
                 })
                 .ToListAsync();
         }

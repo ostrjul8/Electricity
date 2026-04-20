@@ -1,11 +1,21 @@
 using Core.Entities;
 using DAL.Repositories;
+using System.Globalization;
+using System.Text;
 
 namespace BLL.Services
 {
     public class BuildingMapService
     {
         private const int AnomalyColorLevel = 7;
+
+        private sealed class AnomalyEntry
+        {
+            public required Building Building { get; init; }
+            public required double LatestConsumption { get; init; }
+            public required double AverageConsumption { get; init; }
+            public required double DeviationPercent { get; init; }
+        }
 
         private readonly BuildingRepository _buildingRepository;
         private readonly ConsumptionRepository _consumptionRepository;
@@ -51,34 +61,7 @@ namespace BLL.Services
 
         public async Task<List<BuildingMapPointDTO>> GetAnomalyMapPointsAsync(double deviationPercent)
         {
-            List<Building> buildings = await _buildingRepository.GetForMapPointsAsync();
-            if (!buildings.Any())
-            {
-                return new List<BuildingMapPointDTO>();
-            }
-
-            List<ConsumptionRecord> latestConsumptionRecords = await _consumptionRepository.GetLatestPerBuildingAsync();
-            Dictionary<int, double> latestByBuildingId = latestConsumptionRecords
-                .ToDictionary(c => c.BuildingId, c => c.ConsumptionAmount);
-
-            Dictionary<int, double> averageByBuildingId = await _consumptionRepository.GetAverageByBuildingIdAsync();
-
-            List<(Building Building, double LatestConsumption, double AverageConsumption)> anomalies = buildings
-                .Where(b => latestByBuildingId.TryGetValue(b.Id, out _))
-                .Select(b =>
-                {
-                    double averageConsumption = averageByBuildingId.TryGetValue(b.Id, out double computedAverage)
-                        ? computedAverage
-                        : b.AverageConsumption;
-
-                    return (
-                        Building: b,
-                        LatestConsumption: latestByBuildingId[b.Id],
-                        AverageConsumption: averageConsumption
-                    );
-                })
-                .Where(entry => GetPositiveDeviationPercent(entry.AverageConsumption, entry.LatestConsumption) >= deviationPercent)
-                .ToList();
+            List<AnomalyEntry> anomalies = await GetAnomalyEntriesAsync(deviationPercent);
 
             if (!anomalies.Any())
             {
@@ -92,6 +75,70 @@ namespace BLL.Services
                 Latitude = a.Building.Latitude,
                 ColorLevel = AnomalyColorLevel
             }).ToList();
+        }
+
+        public async Task<(string FileName, string CsvContent)> GenerateAnomalyCsvReportAsync(double deviationPercent)
+        {
+            List<AnomalyEntry> anomalies = await GetAnomalyEntriesAsync(deviationPercent);
+
+            StringBuilder csv = new StringBuilder();
+            csv.AppendLine("BuildingId,BuildingName,BuildingAddress,DistrictName,Latitude,Longitude,AverageConsumption,LatestConsumption,DeviationPercent,ThresholdPercent");
+
+            foreach (AnomalyEntry anomaly in anomalies.OrderBy(entry => entry.Building.Id))
+            {
+                string districtName = anomaly.Building.District?.Name ?? string.Empty;
+
+                csv.AppendLine(string.Join(",",
+                    anomaly.Building.Id,
+                    CsvEscape(anomaly.Building.Name),
+                    CsvEscape(anomaly.Building.Address),
+                    CsvEscape(districtName),
+                    anomaly.Building.Latitude.ToString("0.######", CultureInfo.InvariantCulture),
+                    anomaly.Building.Longitude.ToString("0.######", CultureInfo.InvariantCulture),
+                    anomaly.AverageConsumption.ToString("0.####", CultureInfo.InvariantCulture),
+                    anomaly.LatestConsumption.ToString("0.####", CultureInfo.InvariantCulture),
+                    anomaly.DeviationPercent.ToString("0.##", CultureInfo.InvariantCulture),
+                    deviationPercent.ToString("0.##", CultureInfo.InvariantCulture)));
+            }
+
+            string fileName = $"anomalies-report-{deviationPercent:0.##}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
+            return (fileName, csv.ToString());
+        }
+
+        private async Task<List<AnomalyEntry>> GetAnomalyEntriesAsync(double deviationPercent)
+        {
+            List<Building> buildings = await _buildingRepository.GetForMapPointsAsync();
+            if (!buildings.Any())
+            {
+                return new List<AnomalyEntry>();
+            }
+
+            List<ConsumptionRecord> latestConsumptionRecords = await _consumptionRepository.GetLatestPerBuildingAsync();
+            Dictionary<int, double> latestByBuildingId = latestConsumptionRecords
+                .ToDictionary(c => c.BuildingId, c => c.ConsumptionAmount);
+
+            Dictionary<int, double> averageByBuildingId = await _consumptionRepository.GetAverageByBuildingIdAsync();
+
+            return buildings
+                .Where(b => latestByBuildingId.TryGetValue(b.Id, out _))
+                .Select(b =>
+                {
+                    double latestConsumption = latestByBuildingId[b.Id];
+                    double averageConsumption = averageByBuildingId.TryGetValue(b.Id, out double computedAverage)
+                        ? computedAverage
+                        : b.AverageConsumption;
+                    double deviation = GetPositiveDeviationPercent(averageConsumption, latestConsumption);
+
+                    return new AnomalyEntry
+                    {
+                        Building = b,
+                        LatestConsumption = latestConsumption,
+                        AverageConsumption = averageConsumption,
+                        DeviationPercent = deviation,
+                    };
+                })
+                .Where(entry => entry.DeviationPercent >= deviationPercent)
+                .ToList();
         }
 
         private static double GetPositiveDeviationPercent(double normalValue, double currentValue)
@@ -148,6 +195,17 @@ namespace BLL.Services
 
             double fraction = position - lowerIndex;
             return ordered[lowerIndex] + (ordered[upperIndex] - ordered[lowerIndex]) * fraction;
+        }
+
+        private static string CsvEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return "\"\"";
+            }
+
+            string escaped = value.Replace("\"", "\"\"");
+            return $"\"{escaped}\"";
         }
     }
 }

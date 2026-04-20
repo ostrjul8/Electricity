@@ -70,6 +70,15 @@
                             [isDisabled]="isLoading() || !hasPendingAnomalyChanges()"
                             (buttonClick)="applyAnomalyFilters()"
                         ></ui-button>
+
+                        <ui-button
+                            label="Сформувати звіт"
+                            theme="primary"
+                            type="default"
+                            [loading]="isGeneratingAnomalyReport()"
+                            [isDisabled]="isLoading()"
+                            (buttonClick)="generateAnomalyReport()"
+                        ></ui-button>
                     </div>
                 }
             </section>
